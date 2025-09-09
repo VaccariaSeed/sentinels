@@ -585,7 +585,7 @@
                             <th>TAG标志</th>
                             <th>Lua表达式</th>
                             <th>描述</th>
-                            <th>告警标识</th>
+                            <th>告警配置</th>
                             <th>倍率</th>
                             <th>单位</th>
                             <th>优先级</th>
@@ -806,8 +806,8 @@
                 
                 <div class="form-row">
                     <div class="form-col-3">
-                        <label for="alarm-flag">告警标识</label>
-                        <input type="text" id="alarm-flag"  name="alarm-flag" value="0">
+                        <label for="alarm-flag">告警配置</label>
+                        <input type="text" id="alarm-flag"  name="alarm-flag" value="">
                     </div>
                     <div class="form-col-3">
                         <label for="multiplier">倍率</label>
@@ -848,11 +848,11 @@
                 <div class="form-row">
                     <div class="form-col-3">
                         <label for="start-bit">起始bit位</label>
-                        <input type="number" id="start-bit" name="start-bit" value="0">
+                        <input type="number" id="start-bit" name="start-bit" value="">
                     </div>
                     <div class="form-col-3">
                         <label for="end-bit">结束bit位</label>
-                        <input type="number" id="end-bit" name="end-bit" value="15">
+                        <input type="number" id="end-bit" name="end-bit" value="">
                     </div>
                 </div>
                 
@@ -1132,8 +1132,8 @@
             <td>${point.priority || '中'}</td>
             <td>${point.endianness || '大端'}</td>
             <td>${point.bitCalculation || '整算'}</td>
-            <td>${point.startBit || 0}</td>
-            <td>${point.endBit || 15}</td>
+            <td>${point.startBit || ''}</td>
+            <td>${point.endBit || ''}</td>
             <td>
                 <button class="btn btn-primary btn-sm" onclick="editPoint('${point.id}')">
                     修改
@@ -1284,8 +1284,8 @@
                     priority: formData.get('priority'),
                     endianness: formData.get('endianness'),
                     bitCalculation: formData.get('bit-calculation'),
-                    startBit: parseInt(formData.get('start-bit')) || 0,
-                    endBit: parseInt(formData.get('end-bit')) || 15,
+                    startBit: parseInt(formData.get('start-bit')),
+                    endBit: parseInt(formData.get('end-bit')),
                     deviceId: document.getElementById('device-select').value
                 };
 

@@ -14,7 +14,7 @@ func init() {
 			Tag:            "T33",
 			LuaExpression:  "ewqeqw",
 			Description:    "测试",
-			AlarmFlag:      "3",
+			AlarmFlag:      "==============================",
 			Multiplier:     1,
 			Unit:           "",
 			Priority:       "",
