@@ -1,0 +1,39 @@
+package api
+
+import (
+	"fmt"
+	"github.com/gin-gonic/gin"
+	"io"
+	"net/http"
+	"os"
+	"path"
+	"sentinels/global"
+)
+
+func init() {
+	go func() {
+		gin.SetMode(gin.ReleaseMode)
+		gin.DefaultWriter = io.Discard
+		router := gin.Default()
+		// 设置文件上传大小限制 (默认是32MiB)
+		router.MaxMultipartMemory = 8 << 20 // 8MiB
+		router.Use(gin.Recovery())
+		router.LoadHTMLGlob(path.Join(global.Config.Static, "*.html"))
+		router.Static("/static", global.Config.Static)
+		router.GET("/", homeHandler)
+		flushDeviceHandler(router)
+		flushPointHandler(router)
+		flushOperateHandler(router)
+		err := router.Run(fmt.Sprintf(":%d", global.Config.Port))
+		if err != nil {
+			global.SystemLog.Errorf("start http server err:%s", err.Error())
+			os.Exit(1)
+		}
+	}()
+}
+
+func homeHandler(context *gin.Context) {
+	context.HTML(http.StatusOK, "home.html", gin.H{
+		"title": "哨兵",
+	})
+}

@@ -1,0 +1,1599 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>sentinels哨兵采集控制器</title>
+    <link rel="stylesheet" href="./all.min.css">
+    <style>
+        :root {
+            --primary-color: #2c3e50;
+            --secondary-color: #3498db;
+            --accent-color: #e74c3c;
+            --light-color: #ecf0f1;
+            --dark-color: #1a2530;
+            --success-color: #2ecc71;
+            --warning-color: #f39c12;
+            --gray-color: #7f8c8d;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background-color: #f5f7fa;
+            color: #333;
+            line-height: 1.6;
+            overflow-x: hidden;
+        }
+        
+        .container {
+            width: 100%;
+            max-width: 1800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding: 20px;
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: white;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        }
+        
+        header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+        }
+        
+        header p {
+            font-size: 1.1rem;
+            max-width: 800px;
+            margin: 0 auto;
+            opacity: 0.9;
+        }
+        
+        .tabs {
+            display: flex;
+            background-color: white;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+        }
+        
+        .tab {
+            padding: 15px 25px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            text-align: center;
+            flex: 1;
+            border-bottom: 3px solid transparent;
+        }
+        
+        .tab:hover {
+            background-color: #f8f9fa;
+        }
+        
+        .tab.active {
+            border-bottom: 3px solid var(--secondary-color);
+            color: var(--secondary-color);
+        }
+        
+        .tab-content {
+            display: none;
+            background-color: white;
+            padding: 25px;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            width: 100%;
+        }
+        
+        .tab-content.active {
+            display: block;
+            animation: fadeIn 0.5s ease;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        
+        .table-container {
+            overflow-x: auto;
+            margin-top: 20px;
+            width: 100%;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            min-width: 1400px;
+        }
+        
+        th, td {
+            padding: 12px 15px;
+            text-align: left;
+            border-bottom: 1px solid #e0e0e0;
+        }
+        
+        th {
+            background-color: #f8f9fa;
+            font-weight: 600;
+            color: var(--primary-color);
+        }
+        
+        tr:hover {
+            background-color: #f5f7fa;
+        }
+        
+        .btn {
+            padding: 8px 15px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 5px;
+        }
+        
+        .btn-primary {
+            background-color: var(--secondary-color);
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background-color: #2980b9;
+        }
+        
+        .btn-danger {
+            background-color: var(--accent-color);
+            color: white;
+        }
+        
+        .btn-danger:hover {
+            background-color: #c0392b;
+        }
+        
+        .btn-success {
+            background-color: var(--success-color);
+            color: white;
+        }
+        
+        .btn-success:hover {
+            background-color: #27ae60;
+        }
+        
+        .btn-warning {
+            background-color: var(--warning-color);
+            color: white;
+        }
+        
+        .btn-warning:hover {
+            background-color: #e67e22;
+        }
+        
+        .btn-sm {
+            padding: 5px 10px;
+            font-size: 0.9rem;
+        }
+        
+        .action-buttons {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .form-group {
+            display: flex;
+            align-items: flex-end; /* 底部对齐 */
+            gap: 15px; /* 元素间距 */
+            margin-bottom: 20px;
+            flex-wrap: wrap; /* 允许换行 */
+        }
+
+        .form-item {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .form-item label {
+            margin-bottom: 5px;
+            font-weight: bold;
+            font-size: 14px;
+        }
+
+        .form-item select,
+        .form-item input {
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+            min-width: 150px;
+        }
+
+        .form-item select {
+            height: 38px; /* 与输入框高度一致 */
+        }
+
+        .search-btn {
+            padding: 8px 20px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            height: 38px; /* 与其他表单元素高度一致 */
+        }
+
+        .search-btn:hover {
+            background-color: #0056b3;
+        }
+
+        /* 响应式设计 */
+        @media (max-width: 768px) {
+            .form-group {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .form-item select,
+            .form-item input {
+                min-width: auto;
+            }
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: var(--primary-color);
+        }
+        
+        select, input, textarea {
+            width: 100%;
+            padding: 10px 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 1rem;
+        }
+        
+        .pagination {
+            display: flex;
+            justify-content: center;
+            margin-top: 20px;
+            gap: 5px;
+        }
+        
+        .pagination button {
+            padding: 8px 15px;
+            border: 1px solid #ddd;
+            background-color: white;
+            cursor: pointer;
+            border-radius: 5px;
+        }
+        
+        .pagination button.active {
+            background-color: var(--secondary-color);
+            color: white;
+            border-color: var(--secondary-color);
+        }
+        
+        .user-actions {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+        
+        .user-action-card {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s ease;
+        }
+        
+        .user-action-card:hover {
+            transform: translateY(-5px);
+        }
+        
+        .user-action-card i {
+            font-size: 2.5rem;
+            margin-bottom: 15px;
+            color: var(--secondary-color);
+        }
+        
+        .user-action-card h3 {
+            margin-bottom: 10px;
+            color: var(--primary-color);
+        }
+        
+        footer {
+            text-align: center;
+            margin-top: 40px;
+            padding: 20px;
+            color: var(--gray-color);
+        }
+        
+        /* 模态框样式 */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .modal-content {
+            background-color: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 5px 25px rgba(0, 0, 0, 0.2);
+            width: 90%;
+            max-width: 1200px;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+        
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .modal-header h2 {
+            color: var(--primary-color);
+        }
+        
+        .close {
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: var(--gray-color);
+        }
+        
+        .form-row {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 15px;
+        }
+        
+        .form-col {
+            flex: 1;
+        }
+        
+        .form-col-3 {
+            flex: 0 0 calc(33.333% - 14px);
+        }
+        
+        .device-status {
+            display: inline-block;
+            padding: 5px 10px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 600;
+        }
+        
+        .status-active {
+            background-color: rgba(46, 204, 113, 0.2);
+            color: var(--success-color);
+        }
+        
+        .status-inactive {
+            background-color: rgba(231, 76, 60, 0.2);
+            color: var(--accent-color);
+        }
+        
+        .toggle-switch {
+            position: relative;
+            display: inline-block;
+            width: 50px;
+            height: 24px;
+        }
+        
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            transition: .4s;
+            border-radius: 24px;
+        }
+        
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 16px;
+            width: 16px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+        
+        input:checked + .slider {
+            background-color: var(--success-color);
+        }
+        
+        input:checked + .slider:before {
+            transform: translateX(26px);
+        }
+        
+        .form-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+            margin-top: 20px;
+            padding-top: 15px;
+            border-top: 1px solid #eee;
+        }
+        
+        @media (max-width: 1400px) {
+            .form-col-3 {
+                flex: 0 0 calc(50% - 10px);
+            }
+        }
+        
+        @media (max-width: 1200px) {
+            .container {
+                padding: 15px;
+            }
+            
+            .form-row {
+                flex-direction: column;
+                gap: 10px;
+            }
+            
+            .form-col-3 {
+                flex: 1;
+            }
+        }
+        
+        @media (max-width: 768px) {
+            .tabs {
+                flex-direction: column;
+            }
+            
+            .user-actions {
+                grid-template-columns: 1fr;
+            }
+            
+            .modal-content {
+                width: 95%;
+                padding: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>sentinels哨兵采集控制器</h1>
+            <p>集中管理设备配置、点位信息的综合组件，提供高效可靠的物联网设备监控与控制</p>
+        </header>
+        
+        <div class="tabs">
+            <div class="tab active" data-tab="device-config">设备配置</div>
+            <div class="tab" data-tab="point-config">点位配置</div>
+            <div class="tab" data-tab="user-operations">用户操作</div>
+        </div>
+        
+        <!-- 设备配置标签页 -->
+        <div class="tab-content active" id="device-config">
+            <h2>设备配置管理</h2>
+            <p>管理所有连接的设备信息，包括设备ID、名称、编码、连接类型等参数</p>
+            
+            <div class="action-buttons">
+                <button class="btn btn-primary" id="add-device-btn">
+                    <i class="fas fa-plus"></i> 新增设备
+                </button>
+            </div>
+            
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>操作状态</th>
+                            <th>设备ID</th>
+                            <th>设备名称</th>
+                            <th>设备编码</th>
+                            <th>存储表名</th>
+                            <th>接口类型</th>
+                            <th>地址</th>
+                            <th>波特率</th>
+                            <th>停止位</th>
+                            <th>校验位</th>
+                            <th>数据位</th>
+                            <th>协议类型</th>
+                            <th>设备地址</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        
+        <!-- 点位配置标签页 -->
+        <div class="tab-content" id="point-config">
+            <h2>点位配置管理</h2>
+            <p>配置设备的具体点位信息，包括功能码、地址、数据类型、TAG标志等参数</p>
+
+            <div class="form-group">
+                <div class="form-item">
+                    <label for="device-select">选择设备类型</label>
+                    <select id="device-select">
+                        <option value="">请选择</option>
+                    </select>
+                </div>
+
+                <div class="form-item">
+                    <label for="device-mark">设备描述</label>
+                    <input type="text" id="device-mark" name="device-mark" placeholder="输入设备描述">
+                </div>
+
+                <button class="search-btn" id="search-btn" name="search-btn">搜索</button>
+            </div>
+            
+            <div class="action-buttons">
+                <button class="btn btn-primary" id="add-point-btn">
+                    <i class="fas fa-plus"></i> 新增点位
+                </button>
+            </div>
+            
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>功能码</th>
+                            <th>地址</th>
+                            <th>数据类型</th>
+                            <th>TAG标志</th>
+                            <th>Lua表达式</th>
+                            <th>描述</th>
+                            <th>告警标识</th>
+                            <th>倍率</th>
+                            <th>单位</th>
+                            <th>优先级</th>
+                            <th>大小端</th>
+                            <th>bit位计算</th>
+                            <th>起始bit位</th>
+                            <th>结束bit位</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+
+                    </tbody>
+                </table>
+            </div>
+            
+            <div class="pagination">
+                <button class="active">1</button>
+                <button>2</button>
+                <button>3</button>
+                <button>下一页</button>
+            </div>
+        </div>
+        
+        <!-- 用户操作标签页 -->
+        <div class="tab-content" id="user-operations">
+            <h2>用户操作</h2>
+            <p>执行系统级操作，包括暂停数据采集、刷新页面、清空数据和导入配置等</p>
+            
+            <div class="user-actions">
+                <div class="user-action-card">
+                    <i class="fas fa-pause-circle"></i>
+                    <h3>暂停</h3>
+                    <p>暂停数据采集和监控</p>
+                    <button class="btn btn-warning">执行暂停</button>
+                </div>
+                
+                <div class="user-action-card">
+                    <i class="fas fa-sync-alt"></i>
+                    <h3>刷新</h3>
+                    <p>刷新采集控制配置</p>
+                    <button class="btn btn-primary">执行刷新</button>
+                </div>
+                
+                <div class="user-action-card">
+                    <i class="fas fa-trash-alt"></i>
+                    <h3>清空</h3>
+                    <p>清空所有历史数据</p>
+                    <button class="btn btn-danger">执行清空</button>
+                </div>
+                
+                <div class="user-action-card">
+                    <i class="fas fa-file-import"></i>
+                    <h3>导入</h3>
+                    <p>导入已经配置好的配置文件</p>
+                    <button class="btn btn-success">选择文件</button>
+                </div>
+                
+                <div class="user-action-card">
+                    <i class="fas fa-download"></i>
+                    <h3>下载模板</h3>
+                    <p>下载导入模板文件</p>
+                    <button class="btn btn-primary">下载</button>
+                </div>
+            </div>
+        </div>
+        
+        <footer>
+            <p>sentinels哨兵采集控制器 &copy; 2025 - 版权所有人:VaccariaSeed</p>
+        </footer>
+    </div>
+
+    <!-- 新增设备模态框 -->
+    <div class="modal" id="device-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>设备配置</h2>
+                <span class="close">&times;</span>
+            </div>
+            <form id="device-form">
+                <div class="form-row">
+                    <div class="form-col-3">
+                        <label for="device-name">设备名称</label>
+                        <input type="text" id="device-name"  name="device-name" required>
+                    </div>
+                    <div class="form-col-3">
+                        <label for="device-code">设备编码</label>
+                        <input type="text" id="device-code" name="device-code" required>
+                    </div>
+                    <div class="form-col-3">
+                        <label for="initial-status">初始状态</label>
+                        <select id="initial-status" name="initial-status" required>
+                            <option value="active">运行</option>
+                            <option value="inactive">停止</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-col-3">
+                        <label for="storage-table">存储表名</label>
+                        <input type="text" id="storage-table" name="storage-table">
+                    </div>
+
+                    <div class="form-col-3">
+                        <label for="interface-type">接口类型</label>
+                        <select id="interface-type" name="interface-type" required>
+                            <option value="">-- 选择接口类型 --</option>
+                            <option value="RS485">RS485</option>
+                            <option value="RS232">RS232</option>
+                            <option value="Ethernet">TCP</option>
+                            <option value="USB">UDP</option>
+                        </select>
+                    </div>
+                    <div class="form-col-3">
+                        <label for="address">地址</label>
+                        <input type="text" id="address"  name="address" required>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-col-3">
+                        <label for="baudRate">波特率</label>
+                        <input type="text" id="baudRate" name="baudRate">
+                    </div>
+                    <div class="form-col-3">
+                        <label for="stopBits">停止位</label>
+                        <input type="text" id="stopBits" name="stopBits">
+                    </div>
+                    <div class="form-col-3">
+                        <label for="parity">校验位</label>
+                        <select id="parity" name="parity">
+                            <option value="N">无校验</option>
+                            <option value="E">奇校验</option>
+                            <option value="O">偶校验</option>
+                        </select>
+                    </div>
+
+                </div>
+
+                <div class="form-row">
+                    <div class="form-col-3">
+                        <label for="dataBits">数据位</label>
+                        <input type="text" id="dataBits" name="dataBits">
+                    </div>
+                    <div class="form-col-3">
+                        <label for="protocol-type">协议类型</label>
+                        <select id="protocol-type" name="protocol-type" required>
+                            <option value="">-- 选择协议类型 --</option>
+                            <option value="Modbus">Modbus</option>
+                            <option value="Profinet">Profinet</option>
+                            <option value="HTTP">HTTP</option>
+                            <option value="其他">其他</option>
+                        </select>
+                    </div>
+                    <div class="form-col-3">
+                        <label for="device-address">设备地址</label>
+                        <input type="text" id="device-address" name="device-address" required>
+                    </div>
+                    <div class="form-col-3" style="display: none;">
+                        <label for="device-id">设备id</label>
+                        <input type="text" id="device-id" name="device-id">
+                    </div>
+                </div>
+
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-primary">保存</button>
+                    <button type="button" class="btn btn-danger" id="cancel-device">取消</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- 新增点位模态框 -->
+    <div class="modal" id="point-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>点位配置</h2>
+                <span class="close">&times;</span>
+            </div>
+            <form id="point-form">
+                <div class="form-row">
+                    <div class="form-col-3">
+                        <label for="function-code">功能码</label>
+                        <input type="text" id="function-code"  name="function-code" required>
+                    </div>
+                    <div class="form-col-3">
+                        <label for="point-address">地址</label>
+                        <input type="text" name="point-address" id="point-address" required>
+                    </div>
+                    <div class="form-col-3">
+                        <label for="data-type">数据类型</label>
+                        <select id="data-type" name="data-type" required>
+                            <option value="">-- 选择数据类型 --</option>
+                            <option value="Float">Float</option>
+                            <option value="Int16">Int16</option>
+                            <option value="Int32">Int32</option>
+                            <option value="Double">Double</option>
+                            <option value="String">String</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-col-3">
+                        <label for="tag-flag">TAG标志</label>
+                        <input type="text" id="tag-flag"  name="tag-flag" required>
+                    </div>
+                    <div class="form-col-3">
+                        <label for="lua-expression">Lua表达式</label>
+                        <input type="text" id="lua-expression" name="lua-expression">
+                    </div>
+                    <div class="form-col-3">
+                        <label for="description">描述</label>
+                        <input type="text" id="description" name="description" required>
+                    </div>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-col-3">
+                        <label for="alarm-flag">告警标识</label>
+                        <input type="text" id="alarm-flag"  name="alarm-flag" value="0">
+                    </div>
+                    <div class="form-col-3">
+                        <label for="multiplier">倍率</label>
+                        <input type="number" id="multiplier" name="multiplier" step="0.1" value="1.0">
+                    </div>
+                    <div class="form-col-3">
+                        <label for="unit">单位</label>
+                        <input type="text" id="unit" name="unit">
+                    </div>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-col-3">
+                        <label for="priority">优先级</label>
+                        <select id="priority" name="priority">
+                            <option value="高">高</option>
+                            <option value="中" selected>中</option>
+                            <option value="低">低</option>
+                        </select>
+                    </div>
+                    <div class="form-col-3">
+                        <label for="endianness">大小端</label>
+                        <select id="endianness" name="endianness">
+                            <option value="大端">大端</option>
+                            <option value="小端">小端</option>
+                        </select>
+                    </div>
+                    <div class="form-col-3">
+                        <label for="bit-calculation">bit位计算</label>
+                        <select id="bit-calculation" name="bit-calculation">
+                            <option value="整算">整算</option>
+                            <option value="单bit位">单bit位</option>
+                            <option value="多bit位">多bit位</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-col-3">
+                        <label for="start-bit">起始bit位</label>
+                        <input type="number" id="start-bit" name="start-bit" value="0">
+                    </div>
+                    <div class="form-col-3">
+                        <label for="end-bit">结束bit位</label>
+                        <input type="number" id="end-bit" name="end-bit" value="15">
+                    </div>
+                </div>
+                
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-primary">保存</button>
+                    <button type="button" class="btn btn-danger" id="cancel-point">取消</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // 全局变量
+        let currentPage = {
+            devices: 1,
+            points: 1
+        };
+        const pageSize = 20;
+        let totalPoints = 0;
+        let currentDeviceId = '';
+
+        // 初始化函数
+        document.addEventListener('DOMContentLoaded', function() {
+            loadDevices();
+            setupEventListeners();
+        });
+
+        // 设置事件监听器
+        function setupEventListeners() {
+            // 标签切换功能
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.addEventListener('click', () => {
+                    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+                    document.querySelectorAll('.tab-content').forEach(tc => tc.classList.remove('active'));
+
+                    tab.classList.add('active');
+                    const tabId = tab.getAttribute('data-tab');
+                    document.getElementById(tabId).classList.add('active');
+
+                    // 加载对应标签的数据
+                    if (tabId === 'device-config') {
+                        loadDevices();
+                    } else if (tabId === 'point-config') {
+                        loadPoints();
+                    }
+                });
+            });
+
+            // 模态框功能
+            const deviceModal = document.getElementById('device-modal');
+            const pointModal = document.getElementById('point-modal');
+            const addDeviceBtn = document.getElementById('add-device-btn');
+            const addPointBtn = document.getElementById('add-point-btn');
+            const closeButtons = document.querySelectorAll('.close');
+            const cancelDeviceBtn = document.getElementById('cancel-device');
+            const cancelPointBtn = document.getElementById('cancel-point');
+
+            // 打开设备模态框
+            addDeviceBtn.addEventListener('click', () => {
+                document.getElementById('device-form').reset();
+                document.getElementById('device-id').value = '';
+                deviceModal.style.display = 'flex';
+            });
+
+            // 打开点位模态框
+            addPointBtn.addEventListener('click', () => {
+                document.getElementById('point-form').reset();
+                document.getElementById('point-id').value = '';
+                pointModal.style.display = 'flex';
+            });
+
+            // 关闭模态框
+            function closeModals() {
+                deviceModal.style.display = 'none';
+                pointModal.style.display = 'none';
+            }
+
+            // 点击关闭按钮
+            closeButtons.forEach(btn => {
+                btn.addEventListener('click', closeModals);
+            });
+
+            // 点击取消按钮
+            cancelDeviceBtn.addEventListener('click', closeModals);
+            cancelPointBtn.addEventListener('click', closeModals);
+
+            // 点击模态框外部关闭
+            window.addEventListener('click', (e) => {
+                if (e.target === deviceModal) closeModals();
+                if (e.target === pointModal) closeModals();
+            });
+
+            // 表单提交
+            document.getElementById('device-form').addEventListener('submit', (e) => {
+                e.preventDefault();
+                saveDevice();
+            });
+
+            document.getElementById('point-form').addEventListener('submit', (e) => {
+                e.preventDefault();
+                savePoint();
+            });
+
+            document.getElementById('search-btn').addEventListener('click', function() {
+                currentPage.points = 1;
+                loadPoints()
+            });
+
+            // 用户操作按钮
+            document.querySelectorAll('.user-action-card button').forEach(button => {
+                button.addEventListener('click', function() {
+                    const action = this.closest('.user-action-card').querySelector('h3').textContent;
+                    executeUserAction(action);
+                });
+            });
+        }
+
+        // 加载设备列表
+        async function loadDevices() {
+            try {
+                showLoading('device-config');
+
+                // 调用API获取设备列表
+                const response = await fetch('/api/devices', {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const devices = await response.json();
+                renderDevicesTable(devices);
+
+                // 更新设备下拉选择框
+                updateDeviceSelect(devices);
+            } catch (error) {
+                console.error('加载设备失败:', error);
+                showNotification('加载设备列表失败', 'error');
+            }
+        }
+
+        // 更新设备下拉选择框
+        function updateDeviceSelect(devices) {
+            const deviceSelect = document.getElementById('device-select');
+            deviceSelect.innerHTML = '';
+            devices.forEach(device => {
+                const option = document.createElement('option');
+                option.value = device.id;
+                option.textContent = `${device.name}`;
+                deviceSelect.appendChild(option);
+            });
+
+            // 如果有设备ID，则选中对应设备
+            if (currentDeviceId) {
+                deviceSelect.value = currentDeviceId;
+            }
+        }
+
+        // 渲染设备表格
+        function renderDevicesTable(devices) {
+            const tbody = document.querySelector('#device-config tbody');
+            tbody.innerHTML = '';
+
+            if (devices.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="11" style="text-align: center;">暂无设备数据</td></tr>';
+                return;
+            }
+
+            devices.forEach(device => {
+                const row = document.createElement('tr');
+
+                row.innerHTML = `
+            <td>
+                <label class="toggle-switch">
+                    <input type="checkbox" ${device.status ? 'checked' : ''}
+                           onchange="toggleDeviceStatus('${device.id}', this.checked)">
+                    <span class="slider"></span>
+                </label>
+                <span class="device-status ${device.status ? 'status-active' : 'status-inactive'}">
+                    ${device.status ? '运行中' : '已停止'}
+                </span>
+            </td>
+            <td>${device.id}</td>
+            <td>${device.name}</td>
+            <td>${device.code}</td>
+            <td>${device.table}</td>
+            <td>${device.interfaceType}</td>
+            <td>${device.address}</td>
+            <td>${device.baudRate}</td>
+            <td>${device.stopBits}</td>
+            <td>${device.parity}</td>
+            <td>${device.dataBits}</td>
+            <td>${device.protocolType}</td>
+            <td>${device.deviceAddress}</td>
+            <td>
+                <button class="btn btn-primary btn-sm" onclick="editDevice('${device.id}')">
+                    修改
+                </button>
+                <button class="btn btn-danger btn-sm" onclick="deleteDevice('${device.id}')">
+                    删除
+                </button>
+            </td>
+        `;
+
+                tbody.appendChild(row);
+            });
+        }
+
+        // 加载点位列表（带分页）
+        async function loadPoints() {
+            try {
+                showLoading('point-config');
+
+                const deviceId = document.getElementById('device-select').value;
+                const deviceMark = document.getElementById('device-mark').value;
+                let url = `/api/points?page=${currentPage.points}&pageSize=${pageSize}`;
+
+                if (deviceId) {
+                    url += `&deviceId=${deviceId}`;
+                }
+                if (deviceMark) {
+                    url += `&deviceMark=${deviceMark}`;
+                }
+
+                // 调用API获取点位列表
+                const response = await fetch(url, {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const data = await response.json();
+                renderPointsTable(data.points);
+
+                // 更新分页信息
+                totalPoints = data.totalCount;
+                updatePointsPagination();
+            } catch (error) {
+                console.error('加载点位失败:', error);
+                showNotification('加载点位列表失败', 'error');
+            }
+        }
+
+        // 渲染点位表格
+        function renderPointsTable(points) {
+            const tbody = document.querySelector('#point-config tbody');
+            tbody.innerHTML = '';
+
+            if (points.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="15" style="text-align: center;">暂无点位数据</td></tr>';
+                return;
+            }
+
+            points.forEach(point => {
+                const row = document.createElement('tr');
+
+                row.innerHTML = `
+            <td>${point.id}</td>
+            <td>${point.functionCode}</td>
+            <td>${point.address}</td>
+            <td>${point.dataType}</td>
+            <td>${point.tag}</td>
+            <td>${point.luaExpression || ''}</td>
+            <td>${point.description}</td>
+            <td>${point.alarmFlag || ''}</td>
+            <td>${point.multiplier || 1}</td>
+            <td>${point.unit || ''}</td>
+            <td>${point.priority || '中'}</td>
+            <td>${point.endianness || '大端'}</td>
+            <td>${point.bitCalculation || '整算'}</td>
+            <td>${point.startBit || 0}</td>
+            <td>${point.endBit || 15}</td>
+            <td>
+                <button class="btn btn-primary btn-sm" onclick="editPoint('${point.id}')">
+                    修改
+                </button>
+                <button class="btn btn-danger btn-sm" onclick="deletePoint('${point.id}')">
+                    删除
+                </button>
+            </td>
+        `;
+
+                tbody.appendChild(row);
+            });
+        }
+
+        // 更新点位分页控件
+        function updatePointsPagination() {
+            const paginationContainer = document.querySelector('#point-config .pagination');
+            paginationContainer.innerHTML = '';
+
+            const totalPages = Math.ceil(totalPoints / pageSize);
+
+            // 添加上一页按钮
+            if (currentPage.points > 1) {
+                const prevButton = document.createElement('button');
+                prevButton.textContent = '上一页';
+                prevButton.addEventListener('click', () => {
+                    currentPage.points--;
+                    loadPoints();
+                });
+                paginationContainer.appendChild(prevButton);
+            }
+
+            // 添加页码按钮
+            const startPage = Math.max(1, currentPage.points - 2);
+            const endPage = Math.min(totalPages, startPage + 4);
+
+            for (let i = startPage; i <= endPage; i++) {
+                const pageButton = document.createElement('button');
+                pageButton.textContent = i;
+                pageButton.classList.toggle('active', i === currentPage.points);
+                pageButton.addEventListener('click', () => {
+                    currentPage.points = i;
+                    loadPoints();
+                });
+                paginationContainer.appendChild(pageButton);
+            }
+
+            // 添加下一页按钮
+            if (currentPage.points < totalPages) {
+                const nextButton = document.createElement('button');
+                nextButton.textContent = '下一页';
+                nextButton.addEventListener('click', () => {
+                    currentPage.points++;
+                    loadPoints();
+                });
+                paginationContainer.appendChild(nextButton);
+            }
+
+            // 添加总页数信息
+            const pageInfo = document.createElement('span');
+            pageInfo.textContent = `共 ${totalPoints} 条记录，${totalPages} 页`;
+            pageInfo.style.marginLeft = '15px';
+            paginationContainer.appendChild(pageInfo);
+        }
+
+        // 切换设备状态
+        async function toggleDeviceStatus(deviceId, status) {
+            try {
+                const response = await fetch(`/api/devices/${deviceId}/status`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ status: status })
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                showNotification(`设备已${status ? '启动' : '停止'}`, 'success');
+            } catch (error) {
+                console.error('切换设备状态失败:', error);
+                showNotification('切换设备状态失败', 'error');
+            }
+        }
+
+        // 保存设备
+        async function saveDevice() {
+            try {
+                const formData = new FormData(document.getElementById('device-form'));
+                const deviceData = {
+                    id:formData.get('device-id'),
+                    name: formData.get('device-name'),
+                    code: formData.get('device-code'),
+                    table: formData.get('storage-table'),
+                    interfaceType: formData.get('interface-type'),
+                    address: formData.get('address'),
+                    baudRate: formData.get('baudRate'),
+                    stopBits: formData.get('stopBits'),
+                    dataBits: formData.get('dataBits'),
+                    parity: formData.get('parity'),
+                    protocolType: formData.get('protocol-type'),
+                    deviceAddress: formData.get('device-address'),
+                    status: formData.get('initial-status') === 'active'
+                };
+
+                const method = deviceData.id ? 'PUT' : 'POST';
+                const url = deviceData.id ? `/api/devices/${deviceData.id}` : '/api/devices';
+
+                const response = await fetch(url, {
+                    method: method,
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(deviceData)
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const result = await response.json();
+                showNotification('设备保存成功', 'success');
+                document.getElementById('device-modal').style.display = 'none';
+                loadDevices();
+            } catch (error) {
+                console.error('保存设备失败:', error);
+                showNotification('保存设备失败', 'error');
+            }
+        }
+
+        // 保存点位
+        async function savePoint() {
+            try {
+                const formData = new FormData(document.getElementById('point-form'));
+                const pointData = {
+                    id: formData.get('point-id') || undefined,
+                    functionCode: formData.get('function-code'),
+                    address: formData.get('point-address'),
+                    dataType: formData.get('data-type'),
+                    tag: formData.get('tag-flag'),
+                    luaExpression: formData.get('lua-expression'),
+                    description: formData.get('description'),
+                    alarmFlag: formData.get('alarm-flag'),
+                    multiplier: parseFloat(formData.get('multiplier')) || 1,
+                    unit: formData.get('unit'),
+                    priority: formData.get('priority'),
+                    endianness: formData.get('endianness'),
+                    bitCalculation: formData.get('bit-calculation'),
+                    startBit: parseInt(formData.get('start-bit')) || 0,
+                    endBit: parseInt(formData.get('end-bit')) || 15,
+                    deviceId: document.getElementById('device-select').value
+                };
+
+                const method = pointData.id ? 'PUT' : 'POST';
+                const url = pointData.id ? `/api/points/${pointData.id}` : '/api/points';
+
+                const response = await fetch(url, {
+                    method: method,
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(pointData)
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const result = await response.json();
+                showNotification('点位保存成功', 'success');
+                document.getElementById('point-modal').style.display = 'none';
+                loadPoints();
+            } catch (error) {
+                console.error('保存点位失败:', error);
+                showNotification('保存点位失败', 'error');
+            }
+        }
+
+
+        // 编辑设备
+        async function editDevice(deviceId) {
+            try {
+                const response = await fetch(`/api/devices/${deviceId}`, {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const device = await response.json();
+
+                // 填充表单
+                document.getElementById('device-id').value = device.id;
+                document.getElementById('device-name').value = device.name;
+                document.getElementById('device-code').value = device.code;
+                document.getElementById('storage-table').value = device.table;
+                document.getElementById('interface-type').value = device.interfaceType;
+                document.getElementById('address').value = device.address;
+                document.getElementById('baudRate').value = device.baudRate;
+                document.getElementById('stopBits').value = device.stopBits;
+                document.getElementById('dataBits').value = device.dataBits;
+                document.getElementById('parity').value = device.parity;
+                document.getElementById('protocol-type').value = device.protocolType;
+                document.getElementById('device-address').value = device.deviceAddress;
+                document.getElementById('initial-status').value = device.status ? 'active' : 'inactive';
+
+                // 显示模态框
+                document.getElementById('device-modal').style.display = 'flex';
+            } catch (error) {
+                console.error('获取设备详情失败:', error);
+                showNotification('获取设备详情失败', 'error');
+            }
+        }
+
+        // 编辑点位
+        async function editPoint(pointId) {
+            try {
+                const response = await fetch(`/api/points/${pointId}`, {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const point = await response.json();
+
+                // 填充表单
+                document.getElementById('point-id').value = point.id;
+                document.getElementById('function-code').value = point.functionCode;
+                document.getElementById('point-address').value = point.address;
+                document.getElementById('data-type').value = point.dataType;
+                document.getElementById('tag-flag').value = point.tag;
+                document.getElementById('lua-expression').value = point.luaExpression || '';
+                document.getElementById('description').value = point.description;
+                document.getElementById('alarm-flag').value = point.alarmFlag || '';
+                document.getElementById('multiplier').value = point.multiplier || 1;
+                document.getElementById('unit').value = point.unit || '';
+                document.getElementById('priority').value = point.priority || '中';
+                document.getElementById('endianness').value = point.endianness || '大端';
+                document.getElementById('bit-calculation').value = point.bitCalculation || '整算';
+                document.getElementById('start-bit').value = point.startBit || 0;
+                document.getElementById('end-bit').value = point.endBit || 15;
+
+                // 显示模态框
+                document.getElementById('point-modal').style.display = 'flex';
+            } catch (error) {
+                console.error('获取点位详情失败:', error);
+                showNotification('获取点位详情失败', 'error');
+            }
+        }
+
+        // 删除设备
+        async function deleteDevice(deviceId) {
+            if (!confirm('确定要删除这个设备吗？')) return;
+
+            try {
+                const response = await fetch(`/api/devices/${deviceId}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                showNotification('设备删除成功', 'success');
+                loadDevices();
+            } catch (error) {
+                console.error('删除设备失败:', error);
+                showNotification('删除设备失败', 'error');
+            }
+        }
+
+        // 删除点位
+        async function deletePoint(pointId) {
+            if (!confirm('确定要删除这个点位吗？')) return;
+
+            try {
+                const response = await fetch(`/api/points/${pointId}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                showNotification('点位删除成功', 'success');
+                loadPoints();
+            } catch (error) {
+                console.error('删除点位失败:', error);
+                showNotification('删除点位失败', 'error');
+            }
+        }
+
+        // 执行用户操作
+        async function executeUserAction(action) {
+            try {
+                let endpoint, method, body;
+
+                switch (action) {
+                    case '暂停':
+                        endpoint = '/api/system/pause';
+                        method = 'POST';
+                        break;
+                    case '刷新':
+                        endpoint = '/api/system/flush';
+                        method = 'POST';
+                        break;
+                    case '清空':
+                        endpoint = '/api/data/clear';
+                        method = 'POST';
+                        break;
+                    case '导入':
+                        // 文件上传需要特殊处理
+                        const fileInput = document.createElement('input');
+                        fileInput.type = 'file';
+                        fileInput.accept = '.xlsx';
+                        fileInput.onchange = async (e) => {
+                            const file = e.target.files[0];
+                            if (!file) return;
+
+                            const formData = new FormData();
+                            formData.append('file', file);
+
+                            try {
+                                const response = await fetch('/api/config/import', {
+                                    method: 'POST',
+                                    body: formData
+                                });
+
+                                if (!response.ok) {
+                                    throw new Error(`HTTP error! status: ${response.status}`);
+                                }
+
+                                showNotification('配置文件导入成功', 'success');
+                            } catch (error) {
+                                console.error('导入配置文件失败:', error);
+                                showNotification('导入配置文件失败', 'error');
+                            }
+                        };
+                        fileInput.click();
+                        return;
+                    case '下载模板':
+                        // 直接下载模板文件
+                        window.open('/api/config/template', '_blank');
+                        showNotification('开始下载模板文件', 'info');
+                        return;
+                    default:
+                        showNotification('未知操作', 'error');
+                        return;
+                }
+
+                const response = await fetch(endpoint, {
+                    method: method,
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: body ? JSON.stringify(body) : undefined
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                showNotification(`${action}操作执行成功`, 'success');
+            } catch (error) {
+                console.error(`执行${action}操作失败:`, error);
+                showNotification(`执行${action}操作失败`, 'error');
+            }
+        }
+
+        // 显示加载状态
+        function showLoading(tabId) {
+            const tbody = document.querySelector(`#${tabId} tbody`);
+            tbody.innerHTML = '<tr><td colspan="15" style="text-align: center;"><i class="fas fa-spinner fa-spin"></i> 加载中...</td></tr>';
+        }
+
+        // 显示通知
+        function showNotification(message, type = 'info') {
+            // 创建或获取通知容器
+            let container = document.getElementById('notification-container');
+            if (!container) {
+                container = document.createElement('div');
+                container.id = 'notification-container';
+                container.style.position = 'fixed';
+                container.style.top = '20px';
+                container.style.right = '20px';
+                container.style.zIndex = '10000';
+                document.body.appendChild(container);
+            }
+
+            // 创建通知元素
+            const notification = document.createElement('div');
+            notification.style.padding = '10px 15px';
+            notification.style.marginBottom = '10px';
+            notification.style.borderRadius = '4px';
+            notification.style.color = 'white';
+            notification.style.boxShadow = '0 2px 10px rgba(0,0,0,0.1)';
+            notification.style.maxWidth = '300px';
+            notification.style.wordBreak = 'break-word';
+
+            // 设置背景颜色基于类型
+            switch (type) {
+                case 'success':
+                    notification.style.backgroundColor = '#2ecc71';
+                    break;
+                case 'error':
+                    notification.style.backgroundColor = '#e74c3c';
+                    break;
+                case 'warning':
+                    notification.style.backgroundColor = '#f39c12';
+                    break;
+                default:
+                    notification.style.backgroundColor = '#3498db';
+            }
+
+            notification.textContent = message;
+            container.appendChild(notification);
+
+            // 3秒后自动移除
+            setTimeout(() => {
+                if (notification.parentNode) {
+                    notification.parentNode.removeChild(notification);
+                }
+            }, 3000);
+        }
+
+        // 添加隐藏的ID字段到表单（用于编辑）
+        document.addEventListener('DOMContentLoaded', function() {
+            // 为设备表单添加ID字段
+            const deviceForm = document.getElementById('device-form');
+            const deviceIdInput = document.createElement('input');
+            deviceIdInput.type = 'hidden';
+            deviceIdInput.id = 'device-id';
+            deviceIdInput.name = 'device-id';
+            deviceForm.insertBefore(deviceIdInput, deviceForm.firstChild);
+
+            // 为点位表单添加ID字段
+            const pointForm = document.getElementById('point-form');
+            const pointIdInput = document.createElement('input');
+            pointIdInput.type = 'hidden';
+            pointIdInput.id = 'point-id';
+            pointIdInput.name = 'point-id';
+            pointForm.insertBefore(pointIdInput, pointForm.firstChild);
+        });
+    </script>
+</body>
+</html>
