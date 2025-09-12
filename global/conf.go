@@ -7,11 +7,13 @@ import (
 var Config = &Conf{
 	Port:   defaultPort,
 	Static: defaultStaticPath,
+	DbPath: defaultDbPath,
 }
 
 type Conf struct {
 	Port   int    `ini:"port"`
 	Static string `ini:"static"`
+	DbPath string `ini:"dbPath"`
 }
 
 func flushConf() {

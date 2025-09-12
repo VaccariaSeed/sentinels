@@ -2,11 +2,12 @@ package api
 
 import (
 	"encoding/json"
-	"github.com/gin-gonic/gin"
 	"net/http"
 	"sentinels/global"
 	"sentinels/model"
 	"strconv"
+
+	"github.com/gin-gonic/gin"
 )
 
 func flushPointHandler(router *gin.Engine) {

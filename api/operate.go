@@ -1,11 +1,12 @@
 package api
 
 import (
-	"github.com/gin-gonic/gin"
 	"net/http"
 	"os"
 	"path/filepath"
 	"sentinels/global"
+
+	"github.com/gin-gonic/gin"
 )
 
 func flushOperateHandler(router *gin.Engine) {

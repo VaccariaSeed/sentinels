@@ -6,6 +6,8 @@ import (
 	"net/http"
 	"sentinels/global"
 	"sentinels/model"
+
+	"sentinels/store"
 )
 
 func flushDeviceHandler(router *gin.Engine) {
@@ -19,20 +21,35 @@ func flushDeviceHandler(router *gin.Engine) {
 
 // 查询所有设备
 func selectDeviceHandler(context *gin.Context) {
-	context.JSON(http.StatusOK, model.NewDevice())
+	context.JSON(http.StatusOK, store.DbClient.SelectAllDevice())
 }
 
 // 查询指定的设备
 func oneDeviceHandler(context *gin.Context) {
 	deviceID := context.Param("id")
 	global.SystemLog.Debugf("select device id: %s", deviceID)
-	context.JSON(http.StatusOK, model.Devices[1])
+	device, err := store.DbClient.SelectDeviceById(deviceID)
+	if err != nil {
+		context.JSON(http.StatusBadRequest, gin.H{
+			"error": err.Error(),
+		})
+		return
+	}
+	context.JSON(http.StatusOK, device)
 }
 
 // 删除设备 逻辑删除
 func deleteDeviceHandler(context *gin.Context) {
 	deviceID := context.Param("id")
 	global.SystemLog.Debugf("delete device id: %s", deviceID)
+	err := store.DbClient.DeleteDevice(deviceID)
+	if err != nil {
+		// 绑定失败，返回错误信息（通常是 400 Bad Request）
+		context.JSON(http.StatusBadRequest, gin.H{
+			"error": err.Error(),
+		})
+		return
+	}
 	context.JSON(http.StatusOK, nil)
 }
 
@@ -47,6 +64,11 @@ func saveDeviceHandler(context *gin.Context) {
 	}
 	data, _ := json.Marshal(device)
 	global.SystemLog.Debugf("save device data: %s", string(data))
+	err := store.DbClient.SaveDevice(&device)
+	if err != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
 	context.JSON(http.StatusOK, nil)
 }
 
@@ -64,8 +86,13 @@ func statusDeviceHandler(context *gin.Context) {
 		context.JSON(http.StatusBadRequest, gin.H{"error": "缺少status字段"})
 		return
 	}
-	global.SystemLog.Debugf("change device:%s status to %v", deviceID, status)
-	context.JSON(http.StatusOK, nil)
+	statusBool, _ := status.(bool)
+	global.SystemLog.Debugf("change device:%s status to %v", deviceID, statusBool)
+	err := store.DbClient.UpdateDeviceStatus(deviceID, statusBool)
+	if err != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"error": "更新切入切出失败"})
+		return
+	}
 	context.JSON(http.StatusOK, nil)
 }
 
@@ -80,5 +107,10 @@ func updateDeviceHandler(context *gin.Context) {
 	}
 	data, _ := json.Marshal(device)
 	global.SystemLog.Debugf("update device data: %s", string(data))
-	context.JSON(http.StatusOK, model.NewDevice())
+	err := store.DbClient.UpdateDevice(&device)
+	if err != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	context.JSON(http.StatusOK, nil)
 }

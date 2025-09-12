@@ -2,12 +2,13 @@ package api
 
 import (
 	"fmt"
-	"github.com/gin-gonic/gin"
 	"io"
 	"net/http"
 	"os"
 	"path"
 	"sentinels/global"
+
+	"github.com/gin-gonic/gin"
 )
 
 func init() {
@@ -24,6 +25,7 @@ func init() {
 		flushDeviceHandler(router)
 		flushPointHandler(router)
 		flushOperateHandler(router)
+		flushMonitorHandler(router)
 		err := router.Run(fmt.Sprintf(":%d", global.Config.Port))
 		if err != nil {
 			global.SystemLog.Errorf("start http server err:%s", err.Error())
