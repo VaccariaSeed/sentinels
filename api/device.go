@@ -1,11 +1,10 @@
 package api
 
 import (
-	"encoding/json"
-	"github.com/gin-gonic/gin"
 	"net/http"
-	"sentinels/global"
 	"sentinels/model"
+
+	"github.com/gin-gonic/gin"
 
 	"sentinels/store"
 )
@@ -27,7 +26,6 @@ func selectDeviceHandler(context *gin.Context) {
 // 查询指定的设备
 func oneDeviceHandler(context *gin.Context) {
 	deviceID := context.Param("id")
-	global.SystemLog.Debugf("select device id: %s", deviceID)
 	device, err := store.DbClient.SelectDeviceById(deviceID)
 	if err != nil {
 		context.JSON(http.StatusBadRequest, gin.H{
@@ -41,7 +39,6 @@ func oneDeviceHandler(context *gin.Context) {
 // 删除设备 逻辑删除
 func deleteDeviceHandler(context *gin.Context) {
 	deviceID := context.Param("id")
-	global.SystemLog.Debugf("delete device id: %s", deviceID)
 	err := store.DbClient.DeleteDevice(deviceID)
 	if err != nil {
 		// 绑定失败，返回错误信息（通常是 400 Bad Request）
@@ -62,8 +59,6 @@ func saveDeviceHandler(context *gin.Context) {
 		})
 		return
 	}
-	data, _ := json.Marshal(device)
-	global.SystemLog.Debugf("save device data: %s", string(data))
 	err := store.DbClient.SaveDevice(&device)
 	if err != nil {
 		context.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
@@ -87,7 +82,6 @@ func statusDeviceHandler(context *gin.Context) {
 		return
 	}
 	statusBool, _ := status.(bool)
-	global.SystemLog.Debugf("change device:%s status to %v", deviceID, statusBool)
 	err := store.DbClient.UpdateDeviceStatus(deviceID, statusBool)
 	if err != nil {
 		context.JSON(http.StatusBadRequest, gin.H{"error": "更新切入切出失败"})
@@ -100,13 +94,9 @@ func updateDeviceHandler(context *gin.Context) {
 	var device model.Device
 	if err := context.ShouldBindJSON(&device); err != nil {
 		// 绑定失败，返回错误信息（通常是 400 Bad Request）
-		context.JSON(http.StatusBadRequest, gin.H{
-			"error": err.Error(),
-		})
+		context.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-	data, _ := json.Marshal(device)
-	global.SystemLog.Debugf("update device data: %s", string(data))
 	err := store.DbClient.UpdateDevice(&device)
 	if err != nil {
 		context.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})

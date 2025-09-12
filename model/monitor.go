@@ -4,8 +4,6 @@ import (
 	"time"
 )
 
-//todo 数据库采用VictoriaMetrics
-
 // 设备监控数据结构
 type DeviceMonitor struct {
 	ID                    int       `json:"id"`

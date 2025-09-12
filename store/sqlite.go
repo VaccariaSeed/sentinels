@@ -2,16 +2,23 @@ package store
 
 import (
 	"fmt"
-	"gorm.io/driver/sqlite"
-	"gorm.io/gorm"
 	"os"
 	"sentinels/global"
 	"sentinels/model"
+	"strings"
 	"sync"
 	"time"
+
+	"github.com/glebarez/sqlite"
+	"gorm.io/gorm"
 )
 
 var DbClient *SqliteClient
+
+type SqliteClient struct {
+	lock sync.Mutex //单一锁
+	db   *gorm.DB
+}
 
 func init() {
 	// 配置 GORM 日志
@@ -34,11 +41,6 @@ func init() {
 		global.SystemLog.Errorf("sqlite Point migrate err:%s", err.Error())
 		os.Exit(1)
 	}
-}
-
-type SqliteClient struct {
-	lock sync.Mutex //单一锁
-	db   *gorm.DB
 }
 
 func (s *SqliteClient) SelectAllDevice() []*model.Device {
@@ -83,4 +85,53 @@ func (s *SqliteClient) DeleteDevice(id string) error {
 	s.lock.Lock()
 	defer s.lock.Unlock()
 	return s.db.Where("id = ?", id).Delete(&model.Device{}).Error
+}
+
+func (s *SqliteClient) SavePoint(m *model.Point) error {
+	s.lock.Lock()
+	defer s.lock.Unlock()
+	if strings.TrimSpace(m.ID) == "" {
+		m.ID = fmt.Sprintf("%d", time.Now().Unix())
+	}
+	return s.db.Save(m).Error
+}
+
+func (s *SqliteClient) SelectPoints(page int, size int, id int, mark string) (int, []*model.Point, error) {
+	s.lock.Lock()
+	defer s.lock.Unlock()
+	//查询总记录数
+	var totalCount int64
+	query := s.db.Model(&model.Point{}).Where("device_id = ?", id)
+	if mark != "" {
+		query.Where("description LIKE ?", "%"+mark+"%")
+	}
+	err := query.Count(&totalCount).Error
+	if err != nil {
+		return 0, nil, err
+	}
+	if totalCount == 0 {
+		return 0, make([]*model.Point, 0), nil
+	}
+	if page < 1 {
+		page = 1
+	}
+	offset := (page - 1) * size
+	var points []*model.Point
+	err = query.Limit(size).Offset(offset).Find(&points).Error
+	if err != nil {
+		return 0, nil, err
+	}
+	return int(totalCount), points, nil
+}
+
+func (s *SqliteClient) SelectPointById(id string) (*model.Point, error) {
+	var point *model.Point
+	err := s.db.First(&point, "id = ?", id).Error
+	return point, err
+}
+
+func (s *SqliteClient) DeletePoint(id string) error {
+	s.lock.Lock()
+	defer s.lock.Unlock()
+	return s.db.Where("id = ?", id).Delete(&model.Point{}).Error
 }

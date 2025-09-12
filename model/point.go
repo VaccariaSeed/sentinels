@@ -1,34 +1,5 @@
 package model
 
-import "fmt"
-
-var Points []*Point
-
-func init() {
-	for index := 0; index < 20; index++ {
-		point := &Point{
-			ID:             fmt.Sprintf("%d", index),
-			FunctionCode:   fmt.Sprintf("%d", index),
-			Address:        "0x33",
-			DataType:       "uint16",
-			Tag:            "T33",
-			LuaExpression:  "ewqeqw",
-			Description:    "测试",
-			AlarmFlag:      "======",
-			AlarmLevel:     "low",
-			Multiplier:     1,
-			Unit:           "",
-			Priority:       "",
-			Endianness:     "",
-			BitCalculation: "",
-			StartBit:       0,
-			EndBit:         0,
-			DeviceID:       "2",
-		}
-		Points = append(Points, point)
-	}
-}
-
 type Point struct {
 	ID             string  `json:"id" gorm:"primaryKey"`
 	FunctionCode   string  `json:"functionCode"` //功能码

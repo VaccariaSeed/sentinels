@@ -839,7 +839,7 @@
 
                 <div class="form-item">
                     <label for="device-mark">设备描述</label>
-                    <input type="text" id="device-mark" name="device-mark" placeholder="输入设备描述">
+                    <input type="text" id="device-mark" name="device-mark" autocomplete="off" placeholder="输入设备描述">
                 </div>
 
                 <button class="search-btn" id="search-btn" name="search-btn">搜索</button>
@@ -872,7 +872,7 @@
                             <th>起始bit位</th>
                             <th>结束bit位</th>
                             <th>存储方式</th>
-                            <th>移量</th>
+                            <th>偏移量</th>
                             <th>入库间隔秒</th>
                             <th>操作</th>
                         </tr>
@@ -950,11 +950,11 @@
                 <div class="form-row">
                     <div class="form-col-3">
                         <label for="device-name">设备名称</label>
-                        <input type="text" id="device-name"  name="device-name" required>
+                        <input type="text" id="device-name" autocomplete="off"  name="device-name" required>
                     </div>
                     <div class="form-col-3">
                         <label for="device-code">设备编码</label>
-                        <input type="text" id="device-code" name="device-code" required>
+                        <input type="text" id="device-code" autocomplete="off" name="device-code" required>
                     </div>
                     <div class="form-col-3">
                         <label for="initial-status">初始状态</label>
@@ -968,7 +968,7 @@
                 <div class="form-row">
                     <div class="form-col-3">
                         <label for="storage-table">存储表名</label>
-                        <input type="text" id="storage-table" name="storage-table">
+                        <input type="text" id="storage-table" autocomplete="off" name="storage-table">
                     </div>
 
                     <div class="form-col-3">
@@ -977,24 +977,28 @@
                             <option value="">-- 选择接口类型 --</option>
                             <option value="RS485">RS485</option>
                             <option value="RS232">RS232</option>
-                            <option value="Ethernet">TCP</option>
-                            <option value="USB">UDP</option>
+                            <option value="TCP_CLIENT">TCP客户端</option>
+                            <option value="UDP_CLIENT">UDP客户端</option>
+                            <option value="TCP_SERVER">TCP服务端</option>
+                            <option value="UDP_SERVER">UDP客户端</option>
+                            <option value="CAN">CAN</option>
+                            <option value="SPS">串口服务器</option>
                         </select>
                     </div>
                     <div class="form-col-3">
                         <label for="address">地址</label>
-                        <input type="text" id="address"  name="address" required>
+                        <input type="text" id="address"  autocomplete="off" name="address" required>
                     </div>
                 </div>
 
                 <div class="form-row">
                     <div class="form-col-3">
                         <label for="baudRate">波特率</label>
-                        <input type="text" id="baudRate" name="baudRate">
+                        <input type="text" id="baudRate" autocomplete="off" name="baudRate">
                     </div>
                     <div class="form-col-3">
                         <label for="stopBits">停止位</label>
-                        <input type="text" id="stopBits" name="stopBits">
+                        <input type="text" id="stopBits" autocomplete="off" name="stopBits">
                     </div>
                     <div class="form-col-3">
                         <label for="parity">校验位</label>
@@ -1010,25 +1014,27 @@
                 <div class="form-row">
                     <div class="form-col-3">
                         <label for="dataBits">数据位</label>
-                        <input type="text" id="dataBits" name="dataBits">
+                        <input type="text" id="dataBits" autocomplete="off" name="dataBits">
                     </div>
                     <div class="form-col-3">
                         <label for="protocol-type">协议类型</label>
                         <select id="protocol-type" name="protocol-type" required>
                             <option value="">-- 选择协议类型 --</option>
-                            <option value="Modbus">Modbus</option>
-                            <option value="Profinet">Profinet</option>
-                            <option value="HTTP">HTTP</option>
-                            <option value="其他">其他</option>
+                            <option value="modbus">modbus</option>
+                            <option value="GB28181">GB28181</option>
+                            <option value="698.45">698.45</option>
+                            <option value="DLT645">DLT645</option>
+                            <option value="1376.1">1376.1</option>
+                            <option value="1867">1867</option>
                         </select>
                     </div>
                     <div class="form-col-3">
                         <label for="device-address">设备地址</label>
-                        <input type="text" id="device-address" name="device-address" required>
+                        <input type="text" id="device-address" autocomplete="off" name="device-address" required>
                     </div>
                     <div class="form-col-3" style="display: none;">
                         <label for="device-id">设备id</label>
-                        <input type="text" id="device-id" name="device-id">
+                        <input type="text" autocomplete="off" id="device-id" name="device-id">
                     </div>
                 </div>
 
@@ -1051,21 +1057,26 @@
                 <div class="form-row">
                     <div class="form-col-3">
                         <label for="function-code">功能码</label>
-                        <input type="text" id="function-code"  name="function-code" required>
+                        <input type="text" id="function-code"  autocomplete="off" name="function-code" required>
                     </div>
                     <div class="form-col-3">
                         <label for="point-address">地址</label>
-                        <input type="text" name="point-address" id="point-address" required>
+                        <input type="text" name="point-address" autocomplete="off" id="point-address" required>
                     </div>
                     <div class="form-col-3">
                         <label for="data-type">数据类型</label>
                         <select id="data-type" name="data-type" required>
                             <option value="">-- 选择数据类型 --</option>
-                            <option value="Float">Float</option>
-                            <option value="Int16">Int16</option>
-                            <option value="Int32">Int32</option>
-                            <option value="Double">Double</option>
-                            <option value="String">String</option>
+                            <option value="int8">int8</option>
+                            <option value="int16">int16</option>
+                            <option value="int32">int32</option>
+                            <option value="int64">int64</option>
+                            <option value="uint8">uint8</option>
+                            <option value="uint16">uint16</option>
+                            <option value="uint32">uint32</option>
+                            <option value="uint64">uint64</option>
+                            <option value="float32">float32</option>
+                            <option value="float64">float64</option>
                         </select>
                     </div>
                 </div>
@@ -1073,22 +1084,22 @@
                 <div class="form-row">
                     <div class="form-col-3">
                         <label for="tag-flag">TAG标志</label>
-                        <input type="text" id="tag-flag"  name="tag-flag" required>
+                        <input type="text" id="tag-flag" autocomplete="off"  name="tag-flag" required>
                     </div>
                     <div class="form-col-3">
                         <label for="lua-expression">Lua表达式</label>
-                        <input type="text" id="lua-expression" name="lua-expression">
+                        <input type="text" id="lua-expression" autocomplete="off" name="lua-expression">
                     </div>
                     <div class="form-col-3">
                         <label for="description">描述</label>
-                        <input type="text" id="description" name="description" required>
+                        <input type="text" id="description" autocomplete="off" name="description" required>
                     </div>
                 </div>
                 
                 <div class="form-row">
                     <div class="form-col-3">
                         <label for="alarm-flag">告警配置</label>
-                        <input type="text" id="alarm-flag"  name="alarm-flag" value="">
+                        <input type="text" id="alarm-flag"  autocomplete="off" name="alarm-flag" value="">
                     </div>
                     <div class="form-col-3">
                         <label for="alarm-level">告警等级</label>
@@ -1102,7 +1113,7 @@
                     </div>
                     <div class="form-col-3">
                         <label for="multiplier">倍率</label>
-                        <input type="number" id="multiplier" name="multiplier" step="0.1" value="1.0">
+                        <input type="number" id="multiplier" autocomplete="off" name="multiplier" step="0.1" value="1.0">
                     </div>
 
                 </div>
@@ -1110,21 +1121,21 @@
                 <div class="form-row">
                     <div class="form-col-3">
                         <label for="unit">单位</label>
-                        <input type="text" id="unit" name="unit">
+                        <input type="text" id="unit" name="unit" autocomplete="off">
                     </div>
                     <div class="form-col-3">
                         <label for="priority">优先级</label>
                         <select id="priority" name="priority">
-                            <option value="高">高</option>
-                            <option value="中" selected>中</option>
-                            <option value="低">低</option>
+                            <option value="high">高</option>
+                            <option value="middle" selected>中</option>
+                            <option value="low">低</option>
                         </select>
                     </div>
                     <div class="form-col-3">
                         <label for="endianness">大小端</label>
                         <select id="endianness" name="endianness">
-                            <option value="大端">大端</option>
-                            <option value="小端">小端</option>
+                            <option value="BIG">大端</option>
+                            <option value="LITTLE">小端</option>
                         </select>
                     </div>
 
@@ -1134,18 +1145,18 @@
                     <div class="form-col-3">
                         <label for="bit-calculation">bit位计算</label>
                         <select id="bit-calculation" name="bit-calculation">
-                            <option value="整算">整算</option>
-                            <option value="单bit位">单bit位</option>
-                            <option value="多bit位">多bit位</option>
+                            <option value="all">整算</option>
+                            <option value="single">单bit位</option>
+                            <option value="multiple">多bit位</option>
                         </select>
                     </div>
                     <div class="form-col-3">
                         <label for="start-bit">起始bit位</label>
-                        <input type="number" id="start-bit" name="start-bit" value="">
+                        <input type="number" id="start-bit" autocomplete="off" name="start-bit" value="">
                     </div>
                     <div class="form-col-3">
                         <label for="end-bit">结束bit位</label>
-                        <input type="number" id="end-bit" name="end-bit" value="">
+                        <input type="number" id="end-bit" autocomplete="off" name="end-bit" value="">
                     </div>
                 </div>
 
@@ -1159,11 +1170,11 @@
                     </div>
                     <div class="form-col-3">
                         <label for="offset">偏移量</label>
-                        <input type="number" id="offset" name="offset" value="0">
+                        <input type="number" id="offset" autocomplete="off" name="offset" value="0">
                     </div>
                     <div class="form-col-3">
                         <label for="store">入库间隔:单位秒</label>
-                        <input type="number" id="store" name="store" value="10">
+                        <input type="number" id="store" autocomplete="off" name="store" value="10">
                     </div>
                 </div>
                 
@@ -1447,7 +1458,7 @@
             <td>${point.startBit || ''}</td>
             <td>${point.endBit || ''}</td>
             <td>${point.storageMethod || ''}</td>
-            <td>${point.offset || ''}</td>
+            <td>${point.offset}</td>
             <td>${point.store || ''}</td>
             <td>
                 <button class="btn btn-primary btn-sm" onclick="editPoint('${point.id}')">
@@ -1602,7 +1613,7 @@
                     bitCalculation: formData.get('bit-calculation'),
                     startBit: parseInt(formData.get('start-bit')),
                     endBit: parseInt(formData.get('end-bit')),
-                    storageMethod: parseInt(formData.get('storage-method')),
+                    storageMethod: formData.get('storage-method'),
                     offset: parseInt(formData.get('offset')),
                     store: parseInt(formData.get('store')),
                     deviceId: document.getElementById('device-select').value
@@ -1707,7 +1718,7 @@
                 document.getElementById('start-bit').value = point.startBit || '';
                 document.getElementById('end-bit').value = point.endBit || '';
                 document.getElementById('storage-method').value = point.storageMethod || '';
-                document.getElementById('offset').value = point.offset || '';
+                document.getElementById('offset').value = point.offset;
                 document.getElementById('store').value = point.store || '';
 
                 // 显示模态框
