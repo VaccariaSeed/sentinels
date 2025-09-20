@@ -41,6 +41,11 @@ func init() {
 		global.SystemLog.Errorf("sqlite Point migrate err:%s", err.Error())
 		os.Exit(1)
 	}
+	err = db.AutoMigrate(&model.Collect{})
+	if err != nil {
+		global.SystemLog.Errorf("sqlite Collect migrate err:%s", err.Error())
+		os.Exit(1)
+	}
 }
 
 func (s *SqliteClient) SelectAllDevice() []*model.Device {
@@ -48,6 +53,14 @@ func (s *SqliteClient) SelectAllDevice() []*model.Device {
 	defer s.lock.Unlock()
 	devices := make([]*model.Device, 0)
 	_ = s.db.Find(&devices)
+	return devices
+}
+
+func (s *SqliteClient) SelectCutInDevice() []*model.Device {
+	s.lock.Lock()
+	defer s.lock.Unlock()
+	devices := make([]*model.Device, 0)
+	_ = s.db.Find(&devices, "status = ?", 1)
 	return devices
 }
 
@@ -84,7 +97,11 @@ func (s *SqliteClient) UpdateDevice(m *model.Device) error {
 func (s *SqliteClient) DeleteDevice(id string) error {
 	s.lock.Lock()
 	defer s.lock.Unlock()
-	return s.db.Where("id = ?", id).Delete(&model.Device{}).Error
+	err := s.db.Where("id = ?", id).Delete(&model.Device{}).Error
+	if err == nil {
+		err = s.db.Delete(&model.Point{}, "device_id = ?", id).Error
+	}
+	return err
 }
 
 func (s *SqliteClient) SavePoint(m *model.Point) error {
@@ -125,6 +142,8 @@ func (s *SqliteClient) SelectPoints(page int, size int, id int, mark string) (in
 }
 
 func (s *SqliteClient) SelectPointById(id string) (*model.Point, error) {
+	s.lock.Lock()
+	defer s.lock.Unlock()
 	var point *model.Point
 	err := s.db.First(&point, "id = ?", id).Error
 	return point, err
@@ -134,4 +153,43 @@ func (s *SqliteClient) DeletePoint(id string) error {
 	s.lock.Lock()
 	defer s.lock.Unlock()
 	return s.db.Where("id = ?", id).Delete(&model.Point{}).Error
+}
+
+func (s *SqliteClient) SelectCollectByDeviceId(deviceId string) ([]*model.Collect, error) {
+	s.lock.Lock()
+	defer s.lock.Unlock()
+	collects := make([]*model.Collect, 0)
+	err := s.db.Find(&collects, "device_id = ?", deviceId).Error
+	return collects, err
+}
+
+func (s *SqliteClient) SaveCollect(m *model.Collect) error {
+	s.lock.Lock()
+	defer s.lock.Unlock()
+	if strings.TrimSpace(m.ID) == "" {
+		m.ID = fmt.Sprintf("%d", time.Now().Unix())
+	}
+	return s.db.Save(m).Error
+}
+
+func (s *SqliteClient) SelectOneCollect(id string) (*model.Collect, error) {
+	s.lock.Lock()
+	defer s.lock.Unlock()
+	var collect *model.Collect
+	err := s.db.First(&collect, "id = ?", id).Error
+	return collect, err
+}
+
+func (s *SqliteClient) DeleteCollect(id string) error {
+	s.lock.Lock()
+	defer s.lock.Unlock()
+	return s.db.Where("id = ?", id).Delete(&model.Collect{}).Error
+}
+
+func (s *SqliteClient) SelectPointsByDeviceId(id string) []*model.Point {
+	s.lock.Lock()
+	defer s.lock.Unlock()
+	points := make([]*model.Point, 0)
+	_ = s.db.Find(&points, "device_id = ?", id)
+	return points
 }

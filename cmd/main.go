@@ -5,6 +5,7 @@ import (
 	"os/signal"
 	_ "sentinels/api"
 	"sentinels/global"
+	_ "sentinels/task"
 	"syscall"
 )
 

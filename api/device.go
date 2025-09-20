@@ -36,7 +36,7 @@ func oneDeviceHandler(context *gin.Context) {
 	context.JSON(http.StatusOK, device)
 }
 
-// 删除设备 逻辑删除
+// 删除设备
 func deleteDeviceHandler(context *gin.Context) {
 	deviceID := context.Param("id")
 	err := store.DbClient.DeleteDevice(deviceID)

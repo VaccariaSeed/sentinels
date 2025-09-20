@@ -22,10 +22,10 @@ type LogConfig struct {
 }
 
 func flushSystemLog() {
-	SystemLog = createLog("sentinels")
+	SystemLog = CreateLog("sentinels")
 }
 
-func createLog(name string) *zap.SugaredLogger {
+func CreateLog(name string) *zap.SugaredLogger {
 	// 文件核心（带轮转）
 	fileCore := newFileCore(zapcore.DebugLevel, name)
 	cores := []zapcore.Core{fileCore, newConsoleCore(zapcore.DebugLevel)}

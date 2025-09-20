@@ -1,5 +1,7 @@
 package model
 
+import "fmt"
+
 type Device struct {
 	Id            string `json:"id" gorm:"primaryKey"`
 	Status        bool   `json:"status"` //切入切出状态
@@ -14,4 +16,10 @@ type Device struct {
 	Parity        string `json:"parity"`        //校验位
 	ProtocolType  string `json:"protocolType"`  //协议类型
 	DeviceAddress string `json:"deviceAddress"` //设备地址
+	WriteTimeout  int    `json:"writeTimeout"`
+	ReadTimeout   int    `json:"readTimeout"`
+}
+
+func (d *Device) Identifier() string {
+	return fmt.Sprintf("%s_%s_%s", d.Id, d.Name, d.Code)
 }
