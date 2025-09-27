@@ -28,21 +28,21 @@ type Connector interface {
 	Write(data []byte) error
 	WriteByTimeout(timeout time.Duration, data []byte) error //带超时的发送
 	Read() ([]byte, error)
-	ReadByTimeout(timeout time.Duration) ([]byte, error) //带超时的读取
-	SendAndWaitForReply(data []byte) ([]byte, error)     //发送并等待回复
-	SendAndWaitForReplyByTimeOut(data []byte, timeout time.Duration) ([]byte, error)
+	ReadByTimeout(timeout time.Duration) ([]byte, error)         //带超时的读取
+	SendAndWaitForReply(key string, data []byte) ([]byte, error) //发送并等待回复
+	SendAndWaitForReplyByTimeOut(key string, data []byte, timeout time.Duration) ([]byte, error)
 	AddSuccessLinkedCallBack(call SuccessLinked)                  //添加连接成功的回调
 	AddFailLinkedCallBack(call FailLinked)                        //添加断开连接的回调
 	AddSwapCallback(callback SwapCallback)                        //采集到数据后发送到这里
 	AddProtocolCodec(pc protocol.ProtoConvener)                   //添加编解码器
 	AddCollectPointFailCallback(cps CollectPointsFailCallBack)    //采集失败回调
 	Collect(key string, data []byte, point model.PointSnap) error //采集
-	parse(resp []byte, point model.PointSnap) error               //解析
+	parse(resp []byte, size int, point model.PointSnap) error     //解析
 	ObtainDevice() *model.Device
 	flushLinkedFlag(flag bool)
 	IsLinked() bool
 
-	Operate(opt *model.Operate) ([]byte, error) //控制
+	Operate(ti []byte, opt *model.OperateCmd) ([]byte, error) //控制
 	AddLogger(logger *zap.SugaredLogger)
 }
 
