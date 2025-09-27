@@ -3,13 +3,12 @@ package task
 import (
 	"context"
 	"errors"
-	"fmt"
 	"io"
 	"sentinels/catch"
 	"sentinels/global"
 	"sentinels/model"
 	"sentinels/protocol"
-	"sentinels/store"
+	"sync"
 	"time"
 
 	"go.uber.org/zap"
@@ -43,26 +42,6 @@ func NewGaTaskProcessor(device *model.Device) (*GaTaskProcessor, error) {
 	return gtp, nil
 }
 
-var GTPSnapshot = make(map[string]*GaTaskProcessor)
-
-func init() {
-	devices := store.DbClient.SelectCutInDevice()
-	if len(devices) == 0 {
-		return
-	}
-	for _, device := range devices {
-		gtp, err := NewGaTaskProcessor(devices[0])
-		if err != nil {
-			global.SystemLog.Error(fmt.Sprintf("id:%s name:%s type:%s err:%s", device.Id, device.Name, device.Code, err.Error()))
-			continue
-		}
-		go func() {
-			_ = gtp.Start()
-		}()
-		GTPSnapshot[device.Identifier()] = gtp
-	}
-}
-
 // GaTaskProcessor 采集控制调度器
 type GaTaskProcessor struct {
 	Connector catch.Connector        //连接器
@@ -71,6 +50,7 @@ type GaTaskProcessor struct {
 	ctx       context.Context
 	cancel    context.CancelFunc
 	logger    *zap.SugaredLogger
+	lock      sync.Mutex
 }
 
 func (g *GaTaskProcessor) Start() error {
@@ -104,12 +84,13 @@ func (g *GaTaskProcessor) Stop() error {
 }
 
 func (g *GaTaskProcessor) run() error {
+	var err error
 	for {
 		select {
 		case <-g.ctx.Done():
 			return nil
 		default:
-			err := g.collect(g.pb.Next())
+			err = g.collect(g.pb.Next())
 			if err != nil && errors.Is(err, io.EOF) {
 				return err
 			}
@@ -154,6 +135,9 @@ func (g *GaTaskProcessor) AddCollectPointFailCallback(cps catch.CollectPointsFai
 	g.Connector.AddCollectPointFailCallback(cps)
 }
 
-func (g *GaTaskProcessor) Operate(opt *model.Operate) ([]byte, error) {
-	return g.Connector.Operate(opt)
+func (g *GaTaskProcessor) operate(opt *model.OperateCmd) ([]byte, error) {
+	g.lock.Lock()
+	defer g.lock.Unlock()
+	ti := g.Codec.NextTi()
+	return g.Connector.Operate(ti, opt)
 }

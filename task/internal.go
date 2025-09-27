@@ -23,4 +23,6 @@ func devSwap(dev *model.Device, data map[string]interface{}, ts int64) {
 }
 
 // 采集数据报错
-func collectPointsFail(dev *model.Device, point model.PointSnap, err error) {}
+func collectPointsFail(dev *model.Device, point model.PointSnap, err error) {
+	fmt.Println("collectPointsFail:", dev, point, err)
+}

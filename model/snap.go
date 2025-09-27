@@ -13,7 +13,7 @@ type PointSnap interface {
 	FunctionCode() []byte
 	String() string
 	Point(key interface{}) ([]*Point, error)
-	Parse(resp []byte) (map[string]interface{}, error)
+	Parse(resp []byte, size int) (map[string]interface{}, error)
 }
 
 type ModbusPointSnap struct {
@@ -48,7 +48,7 @@ func (m *ModbusPointSnap) Point(key interface{}) ([]*Point, error) {
 	return nil, errors.New("invalid point key")
 }
 
-func (m *ModbusPointSnap) Parse(resp []byte) (map[string]interface{}, error) {
+func (m *ModbusPointSnap) Parse(resp []byte, size int) (map[string]interface{}, error) {
 	i := 0
 	result := make(map[string]interface{})
 	for index := m.StartAddress; index <= m.EndAddress; index++ {
@@ -56,14 +56,20 @@ func (m *ModbusPointSnap) Parse(resp []byte) (map[string]interface{}, error) {
 		if i >= len(resp) {
 			return nil, errors.New("invalid point size")
 		}
+		var pv []byte
+		if size == 1 {
+			pv = []byte{resp[i]}
+		} else {
+			pv = []byte{resp[i], resp[i+1]}
+		}
 		for _, p := range points {
-			value, err := p.BaseParse(resp[i], resp[i+1])
+			value, err := p.BaseParse(pv...)
 			if err != nil {
 				return nil, err
 			}
 			result[p.Tag] = value
 		}
-		i += 2
+		i += size
 	}
 	return result, nil
 }

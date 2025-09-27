@@ -25,12 +25,17 @@ func (m ModbusRTU) Encode() ([]byte, error) {
 	panic("implement me")
 }
 
-func (m ModbusRTU) Decode(reader *bufio.Reader) ([]byte, error) {
+func (m ModbusRTU) Decode(reader *bufio.Reader) (string, []byte, int, error) {
 	//TODO implement me
 	panic("implement me")
 }
 
-func (m ModbusRTU) Opt(cmd model.OperateCmd) ([]byte, error) {
+func (m ModbusRTU) Opt(ti []byte, cmd *model.OperateCmd) (string, []byte, error) {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (m ModbusRTU) NextTi() []byte {
 	//TODO implement me
 	panic("implement me")
 }
@@ -40,12 +45,17 @@ func (m ModbusRTU) BuildBySnap(snap model.PointSnap) (string, []byte, error) {
 	panic("implement me")
 }
 
-func (m ModbusRTU) Frame() string {
+func (m ModbusRTU) CheckResp(frame, resp []byte) error {
 	//TODO implement me
 	panic("implement me")
 }
 
 func (m ModbusRTU) Key() string {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (m ModbusRTU) Copy() ProtoConvener {
 	//TODO implement me
 	panic("implement me")
 }

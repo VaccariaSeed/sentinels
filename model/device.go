@@ -7,7 +7,7 @@ type Device struct {
 	Status        bool   `json:"status"` //切入切出状态
 	Name          string `json:"name"`
 	Code          string `json:"code"`
-	Table         string `json:"table"`         //表名
+	Table         string `json:"table"`         //标志
 	InterfaceType string `json:"interfaceType"` //接口类型
 	Address       string `json:"address"`       //连接地址
 	BaudRate      int    `json:"baudRate"`      //波特率

@@ -72,7 +72,7 @@ func customTimeEncoder(t time.Time, enc zapcore.PrimitiveArrayEncoder) {
 func newFileCore(level zapcore.LevelEnabler, name string) zapcore.Core {
 	// 配置lumberjack日志轮转
 	lumberJackLogger := &lumberjack.Logger{
-		Filename:   path.Join(logPath, name+".slog"),
+		Filename:   path.Join(logPath, name+".log"),
 		MaxSize:    20,    // 单位：MB
 		MaxBackups: 7,     // 最大备份数量
 		MaxAge:     7,     // 单位：天

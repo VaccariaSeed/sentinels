@@ -29,7 +29,6 @@ func init() {
 		flushPointHandler(router)
 		flushOperateHandler(router)
 		flushMonitorHandler(router)
-		global.SystemLog.Debugf("starting http server -> 127.0.0.1:%d", global.Config.Port)
 		err := router.Run(fmt.Sprintf(":%d", global.Config.Port))
 		if err != nil {
 			global.SystemLog.Errorf("start http server err:%s", err.Error())

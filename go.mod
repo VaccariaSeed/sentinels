@@ -6,6 +6,7 @@ require (
 	github.com/gin-gonic/gin v1.10.1
 	github.com/glebarez/sqlite v1.11.0
 	github.com/tarm/serial v0.0.0-20180830185346-98f6abe2eb07
+	github.com/yuin/gopher-lua v1.1.1
 	go.uber.org/zap v1.27.0
 	gopkg.in/ini.v1 v1.67.0
 	gopkg.in/natefinch/lumberjack.v2 v2.2.1

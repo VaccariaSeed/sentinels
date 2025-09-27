@@ -1,9 +1,12 @@
 package global
 
+import "time"
+
 const (
 	defaultPort       = 9970
 	defaultStaticPath = "./static"
 	defaultDbPath     = "./bin/sentinels.db"
+	DefaultTimeout    = 5000 * time.Millisecond
 )
 
 func init() {
@@ -43,6 +46,17 @@ const (
 )
 
 const (
+	BigEndian    = "BIG"
+	LittleEndian = "LITTLE"
+)
+
+const (
+	AllBit      = "all"
+	SingleBit   = "single"
+	MultipleBit = "multiple"
+)
+
+const (
 	DTInt8       = "int8"
 	DTInt16      = "int16"
 	DTInt32      = "int32"
@@ -64,4 +78,16 @@ const (
 	DTFloat32Arr = "float32Arr"
 	DTFloat64Arr = "float64Arr"
 	DTString     = "string"
+)
+
+const (
+	LogoTypeId      = "id"
+	LogoTypeAddress = "address"
+)
+
+// 命令类型
+const (
+	CopyRead    = "copyRead"    //抄读
+	SetCmd      = "setCmd"      //设置
+	Passthrough = "passthrough" //透传
 )

@@ -10,6 +10,7 @@ import (
 	"sentinels/global"
 	"sentinels/model"
 	"strings"
+	"sync"
 	"syscall"
 	"time"
 )
@@ -59,6 +60,7 @@ type TcpClient struct {
 	reader     *bufio.Reader
 	ctx        context.Context
 	cancel     context.CancelFunc
+	transfer   sync.Map
 }
 
 func (t *TcpClient) Open() error {
@@ -123,8 +125,12 @@ func (t *TcpClient) Type() string {
 }
 
 func (t *TcpClient) Flush() error {
-	_, err := io.ReadAll(t.conn)
-	return err
+	for {
+		_, err := io.ReadAll(t.conn)
+		if err != nil {
+			return nil
+		}
+	}
 }
 
 func (t *TcpClient) Write(data []byte) error {
@@ -150,20 +156,27 @@ func (t *TcpClient) Read() ([]byte, error) {
 			return nil, t.ctx.Err()
 		default:
 			_ = t.conn.SetReadDeadline(time.Now().Add(time.Duration(t.ReadTimeout) * time.Second))
-			resp, err := t.pc.Decode(t.reader)
+			frame, resp, size, err := t.pc.Decode(t.reader)
 			if err != nil {
 				if t.isDisConnected(err) {
 					return nil, io.EOF
 				}
 				continue
 			}
-			t.logger.Debugf("received -> %s", t.pc.Frame())
+			t.logger.Debugf("received -> %s", frame)
 			key := t.pc.Key()
+			sch, ok := t.transfer.Load(key)
+			if ok {
+				if s, flag := sch.(*model.SCH); flag {
+					s.Set(resp)
+				}
+				continue
+			}
 			ps := t.bq.Get(key)
 			if ps == nil {
 				continue
 			}
-			err = t.parse(resp, ps)
+			err = t.parse(resp, size, ps)
 			if err != nil {
 				t.cps(t.Device, ps, err)
 			}
@@ -173,17 +186,29 @@ func (t *TcpClient) Read() ([]byte, error) {
 
 func (t *TcpClient) ReadByTimeout(timeout time.Duration) ([]byte, error) {
 	_ = t.conn.SetReadDeadline(time.Now().Add(timeout))
-	return t.pc.Decode(t.reader)
+	_, resp, _, err := t.pc.Decode(t.reader)
+	return resp, err
 }
 
-func (t *TcpClient) SendAndWaitForReply(data []byte) ([]byte, error) {
-	//TODO implement me
-	panic("implement me")
+func (t *TcpClient) SendAndWaitForReply(key string, data []byte) ([]byte, error) {
+	return t.SendAndWaitForReplyByTimeOut(key, data, global.DefaultTimeout)
 }
 
-func (t *TcpClient) SendAndWaitForReplyByTimeOut(data []byte, timeout time.Duration) ([]byte, error) {
-	//TODO implement me
-	panic("implement me")
+func (t *TcpClient) SendAndWaitForReplyByTimeOut(key string, data []byte, timeout time.Duration) ([]byte, error) {
+	t.logger.Debugf("send -> %s", hex.EncodeToString(data))
+	sch := model.NewSCH(timeout)
+	defer t.transfer.Delete(key)
+	defer sch.Close()
+	t.transfer.Store(key, sch)
+	err := t.Write(data)
+	if err != nil {
+		return nil, err
+	}
+	err = sch.Wait()
+	if err != nil {
+		return nil, err
+	}
+	return sch.GetBytes()
 }
 
 func (t *TcpClient) Collect(key string, data []byte, point model.PointSnap) error {
@@ -198,11 +223,11 @@ func (t *TcpClient) Collect(key string, data []byte, point model.PointSnap) erro
 	return nil
 }
 
-func (t *TcpClient) parse(resp []byte, point model.PointSnap) error {
+func (t *TcpClient) parse(resp []byte, size int, point model.PointSnap) error {
 	if resp == nil || len(resp) == 0 {
 		return errors.New("empty response")
 	}
-	result, err := point.Parse(resp)
+	result, err := point.Parse(resp, size)
 	if err != nil {
 		return err
 	}
@@ -260,7 +285,21 @@ func (t *TcpClient) isDisConnected(err error) bool {
 	return false
 }
 
-func (t *TcpClient) Operate(opt *model.Operate) ([]byte, error) {
-	//TODO implement me
-	panic("implement me")
+func (t *TcpClient) Operate(ti []byte, opt *model.OperateCmd) ([]byte, error) {
+	//生成报文
+	pc := t.pc.Copy()
+	key, frame, err := pc.Opt(ti, opt)
+	if err != nil {
+		return nil, err
+	}
+	var resp []byte
+	if opt.Timeout > 0 {
+		resp, err = t.SendAndWaitForReplyByTimeOut(key, frame, time.Duration(opt.Timeout)*time.Millisecond)
+	} else {
+		resp, err = t.SendAndWaitForReply(key, frame)
+	}
+	if err != nil {
+		return nil, err
+	}
+	return resp, pc.CheckResp(frame, resp)
 }
