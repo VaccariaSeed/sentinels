@@ -2,8 +2,14 @@ package catch
 
 import (
 	"bufio"
+	"context"
+	"encoding/hex"
+	"errors"
+	"math"
+	"sentinels/command"
 	"sentinels/global"
 	"sentinels/model"
+	"sentinels/snap"
 	"sync"
 	"time"
 
@@ -44,7 +50,9 @@ func (R *RS485Client) Open() error {
 	parity := paritySnap[R.Parity]
 	c := &serial.Config{Name: R.Address, Baud: R.BaudRate, Size: byte(R.DataBits), Parity: parity, StopBits: serial.StopBits(R.StopBits)}
 	if R.ReadTimeout >= 0 {
-		c.ReadTimeout = time.Duration(R.WriteTimeout) * time.Millisecond
+		c.ReadTimeout = time.Duration(R.WriteTimeout) * time.Second
+	} else {
+		c.ReadTimeout = global.DefaultTimeout
 	}
 	s, err := serial.OpenPort(c)
 	if err != nil {
@@ -58,61 +66,113 @@ func (R *RS485Client) Open() error {
 }
 
 func (R *RS485Client) Close() error {
-	//TODO implement me
-	panic("implement me")
+	R.lock.Lock()
+	defer R.lock.Unlock()
+	err := R.conn.Close()
+	R.conn = nil
+	R.reader = nil
+	R.flushLinkedFlag(false)
+	return err
 }
 
 func (R *RS485Client) Type() string {
-	//TODO implement me
-	panic("implement me")
+	return global.RS485
 }
 
 func (R *RS485Client) Flush() error {
-	//TODO implement me
-	panic("implement me")
+	return R.conn.Flush()
 }
 
 func (R *RS485Client) Write(data []byte) error {
-	//TODO implement me
-	panic("implement me")
+	err := R.Flush()
+	if err != nil {
+		return err
+	}
+	_, err = R.conn.Write(data)
+	return err
 }
 
 func (R *RS485Client) WriteByTimeout(timeout time.Duration, data []byte) error {
-	//TODO implement me
-	panic("implement me")
+	ctx, cancel := context.WithTimeout(context.Background(), timeout)
+	defer cancel()
+	done := make(chan error, 1)
+
+	go func() {
+		_, err := R.conn.Write(data)
+		done <- err
+	}()
+	select {
+	case err := <-done:
+		return err
+	case <-ctx.Done():
+		return ctx.Err() // 返回超时错误
+	}
 }
 
 func (R *RS485Client) Read() ([]byte, error) {
-	//TODO implement me
-	panic("implement me")
+	frame, result, err := R.pc.Decode(R.reader)
+	if err == nil {
+		R.logger.Debugf("received -> %s", frame)
+	}
+	return result, err
 }
 
-func (R *RS485Client) ReadByTimeout(timeout time.Duration) ([]byte, error) {
-	//TODO implement me
-	panic("implement me")
+func (R *RS485Client) ReadByTimeout(_ time.Duration) ([]byte, error) {
+	return nil, errors.New("such method ReadByTimeout not import")
 }
 
 func (R *RS485Client) SendAndWaitForReply(key string, data []byte) ([]byte, error) {
-	//TODO implement me
-	panic("implement me")
+	return R.SendAndWaitForReplyByTimeOut(key, data, 0)
 }
 
-func (R *RS485Client) SendAndWaitForReplyByTimeOut(key string, data []byte, timeout time.Duration) ([]byte, error) {
-	//TODO implement me
-	panic("implement me")
+func (R *RS485Client) SendAndWaitForReplyByTimeOut(_ string, data []byte, _ time.Duration) ([]byte, error) {
+	R.lock.Lock()
+	defer R.lock.Unlock()
+	R.logger.Debugf("send -> %s", hex.EncodeToString(data))
+	err := R.Write(data)
+	if err != nil {
+		return nil, err
+	}
+	//暂停时间根据波特率而定
+	time.Sleep(R.calculateTimeout(len(data)))
+	return R.Read()
 }
 
-func (R *RS485Client) Collect(key string, data []byte, point model.PointSnap) error {
-	//TODO implement me
-	panic("implement me")
+// 计算暂停时间
+func (R *RS485Client) calculateTimeout(length int) time.Duration {
+	totalBits := length * 10
+	transmissionTime := float64(totalBits) / float64(R.BaudRate)
+	return time.Duration(math.Ceil(transmissionTime*1000)) * time.Millisecond
 }
 
-func (R *RS485Client) parse(resp []byte, size int, point model.PointSnap) error {
-	//TODO implement me
-	panic("implement me")
+func (R *RS485Client) Collect(key string, data []byte, point snap.PointSnap) error {
+	resp, err := R.SendAndWaitForReplyByTimeOut(key, data, 0)
+	if err != nil {
+		return err
+	}
+	return R.parse(resp, point)
 }
 
-func (R *RS485Client) Operate(ti []byte, opt *model.OperateCmd) ([]byte, error) {
-	//TODO implement me
-	panic("implement me")
+func (R *RS485Client) parse(resp []byte, point snap.PointSnap) error {
+	if resp == nil || len(resp) == 0 {
+		return errors.New("empty response")
+	}
+	result, err := point.Parse(resp)
+	if err != nil {
+		return err
+	}
+	R.swap(R.Device, result, time.Now().UnixMilli())
+	return nil
+}
+
+func (R *RS485Client) Operate(opt *command.OperateCmd) ([]byte, error) {
+	key, frame, err := R.pc.Opt(opt)
+	if err != nil {
+		return nil, err
+	}
+	result, err := R.SendAndWaitForReply(key, frame)
+	if err != nil {
+		return nil, err
+	}
+	return result[1:], nil
 }

@@ -34,6 +34,7 @@ const (
 	GB28181   = "GB28181"
 	GBT698    = "698.45"
 	DLT645    = "DLT645"
+	DLT645FE  = "DLT645FE" //报文前存在4个0xFE
 	GBT13761  = "1376.1"
 	GBT1867   = "1867"
 )
@@ -57,32 +58,22 @@ const (
 )
 
 const (
-	DTInt8       = "int8"
-	DTInt16      = "int16"
-	DTInt32      = "int32"
-	DTInt64      = "int64"
-	DTUint8      = "uint8"
-	DTUint16     = "uint16"
-	DTUint32     = "uint32"
-	DTUint64     = "uint64"
-	DTFloat32    = "float32"
-	DTFloat64    = "float64"
-	DTInt8Arr    = "int8Arr"
-	DTInt16Arr   = "int16Arr"
-	DTInt32Arr   = "int32Arr"
-	DTInt64Arr   = "int64Arr"
-	DTUint8Arr   = "uint8Arr"
-	DTUint16Arr  = "uint16Arr"
-	DTUint32Arr  = "uint32Arr"
-	DTUint64Arr  = "uint64Arr"
-	DTFloat32Arr = "float32Arr"
-	DTFloat64Arr = "float64Arr"
-	DTString     = "string"
+	DTBit     = "bit"
+	DTInt8    = "int8"
+	DTInt16   = "int16"
+	DTInt32   = "int32"
+	DTInt64   = "int64"
+	DTByte    = "byte"
+	DTUint16  = "uint16"
+	DTUint32  = "uint32"
+	DTUint64  = "uint64"
+	DTFloat32 = "float32"
+	DTFloat64 = "float64"
 )
 
 const (
-	LogoTypeId      = "id"
-	LogoTypeAddress = "address"
+	LogoTypeId        = "id"
+	LogoTypeTableFlag = "tableFlag"
 )
 
 // 命令类型

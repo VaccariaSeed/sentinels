@@ -2,8 +2,10 @@ package catch
 
 import (
 	"errors"
+	"sentinels/command"
 	"sentinels/model"
 	"sentinels/protocol"
+	"sentinels/snap"
 	"sync"
 	"time"
 
@@ -18,7 +20,7 @@ type FailLinked func(dev *model.Device, err error)
 
 type SwapCallback func(dev *model.Device, data map[string]interface{}, ts int64)
 
-type CollectPointsFailCallBack func(dev *model.Device, point model.PointSnap, err error)
+type CollectPointsFailCallBack func(dev *model.Device, point snap.PointSnap, err error)
 
 type Connector interface {
 	Open() error
@@ -31,18 +33,18 @@ type Connector interface {
 	ReadByTimeout(timeout time.Duration) ([]byte, error)         //带超时的读取
 	SendAndWaitForReply(key string, data []byte) ([]byte, error) //发送并等待回复
 	SendAndWaitForReplyByTimeOut(key string, data []byte, timeout time.Duration) ([]byte, error)
-	AddSuccessLinkedCallBack(call SuccessLinked)                  //添加连接成功的回调
-	AddFailLinkedCallBack(call FailLinked)                        //添加断开连接的回调
-	AddSwapCallback(callback SwapCallback)                        //采集到数据后发送到这里
-	AddProtocolCodec(pc protocol.ProtoConvener)                   //添加编解码器
-	AddCollectPointFailCallback(cps CollectPointsFailCallBack)    //采集失败回调
-	Collect(key string, data []byte, point model.PointSnap) error //采集
-	parse(resp []byte, size int, point model.PointSnap) error     //解析
+	AddSuccessLinkedCallBack(call SuccessLinked)                 //添加连接成功的回调
+	AddFailLinkedCallBack(call FailLinked)                       //添加断开连接的回调
+	AddSwapCallback(callback SwapCallback)                       //采集到数据后发送到这里
+	AddProtocolCodec(pc protocol.ProtoConvener)                  //添加编解码器
+	AddCollectPointFailCallback(cps CollectPointsFailCallBack)   //采集失败回调
+	Collect(key string, data []byte, point snap.PointSnap) error //采集
+	parse(resp []byte, point snap.PointSnap) error               //解析
 	ObtainDevice() *model.Device
 	flushLinkedFlag(flag bool)
 	IsLinked() bool
 
-	Operate(ti []byte, opt *model.OperateCmd) ([]byte, error) //控制
+	Operate(opt *command.OperateCmd) ([]byte, error) //控制
 	AddLogger(logger *zap.SugaredLogger)
 }
 

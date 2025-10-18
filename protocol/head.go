@@ -2,21 +2,21 @@ package protocol
 
 import (
 	"bufio"
-	"sentinels/model"
+	"sentinels/command"
+	"sentinels/snap"
 )
 
 type ProtoConvener interface {
-	Encode() ([]byte, error)                                  //编码
-	Decode(reader *bufio.Reader) (string, []byte, int, error) //解码
-	Opt(ti []byte, cmd *model.OperateCmd) (string, []byte, error)
-	NextTi() []byte
-	BuildBySnap(snap model.PointSnap) (string, []byte, error)
+	Encode() ([]byte, error)                             //编码
+	Decode(reader *bufio.Reader) (string, []byte, error) //解码
+	Opt(cmd *command.OperateCmd) (string, []byte, error)
+	BuildBySnap(snap snap.PointSnap) (string, []byte, error)
 	CheckResp(frame, resp []byte) error
 	Key() string
 	Copy() ProtoConvener
 }
 
-type ProtoCreateFunc func(id string) ProtoConvener
+type ProtoCreateFunc func(id string) (ProtoConvener, error)
 
 var ProtoBuilder = make(map[string]ProtoCreateFunc)
 
@@ -44,7 +44,7 @@ func (p *proTool) byteToBitsSliceAppendZero(b byte) []byte {
 	}
 	result := make([]byte, 0, len(bits)*2)
 	for _, bb := range bits {
-		result = append(result, 0x00, bb)
+		result = append(result, bb, 0x00)
 	}
 	return result
 }

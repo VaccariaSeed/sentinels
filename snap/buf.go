@@ -1,6 +1,8 @@
-package model
+package snap
 
-import "sync"
+import (
+	"sync"
+)
 
 func NewBufQueue(size int) *BufQueue {
 	return &BufQueue{

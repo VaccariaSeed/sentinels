@@ -353,6 +353,7 @@
                         <option value="GB28181">GB28181</option>
                         <option value="698.45">698.45</option>
                         <option value="DLT645">DLT645</option>
+                        <option value="DLT645FE">DLT645(报文前存在FE)</option>
                         <option value="1376.1">1376.1</option>
                         <option value="1867">1867</option>
                     </select>
@@ -405,27 +406,17 @@
                     <label for="data-type">数据类型</label>
                     <select id="data-type" name="data-type" required>
                         <option value="">-- 选择数据类型 --</option>
+                        <option value="bit">bit(针对于modbus的开关量)</option>
                         <option value="int8">int8</option>
                         <option value="int16">int16</option>
                         <option value="int32">int32</option>
                         <option value="int64">int64</option>
-                        <option value="uint8">uint8</option>
+                        <option value="byte">byte</option>
                         <option value="uint16">uint16</option>
                         <option value="uint32">uint32</option>
                         <option value="uint64">uint64</option>
                         <option value="float32">float32</option>
                         <option value="float64">float64</option>
-                        <option value="int8Arr">int8数组</option>
-                        <option value="int16Arr">int16数组</option>
-                        <option value="int32Arr">int32数组</option>
-                        <option value="int64Arr">int64数组</option>
-                        <option value="uint8Arr">uint8数组</option>
-                        <option value="uint16Arr">uint16数组</option>
-                        <option value="uint32Arr">uint32数组</option>
-                        <option value="uint64Arr">uint64数组</option>
-                        <option value="float32Arr">float32数组</option>
-                        <option value="float64Arr">float64数组</option>
-                        <option value="string">字符串</option>
                     </select>
                 </div>
             </div>

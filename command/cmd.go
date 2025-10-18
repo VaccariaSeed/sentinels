@@ -1,47 +1,15 @@
-package model
+package command
 
 import (
 	"errors"
 	"fmt"
 	"math"
 	"sentinels/global"
-	"slices"
 	"strconv"
 	"strings"
-	"time"
 )
 
-type Operate struct {
-	UniqueIdentifier string      `json:"uniqueIdentifier"` //命令唯一标志
-	ReplySize        int         `json:"replySize"`        //重试次数
-	SignType         string      `json:"signType"`         //标志类型，id or address
-	Sign             string      `json:"sign"`             //根据SignType进行变化，如果SignType是id，此为id，如果SignType为address， 此为address
-	SendTime         int64       `json:"sendTime"`         //命令发送的时间
-	ValidityPeriod   int64       `json:"validityPeriod"`   //有效期，单位：毫秒， 当这个值加上命令发送时间大于当前毫米值，这命令执行
-	Cmd              *OperateCmd `json:"cmd"`              //命令
-}
-
-func (o *Operate) Check() error {
-	if o.ReplySize < 0 {
-		o.ReplySize = 0
-	}
-	if o.SignType != global.LogoTypeId && o.SignType != global.LogoTypeAddress {
-		return fmt.Errorf("not found this signType:%s", o.SignType)
-	}
-	if strings.TrimSpace(o.Sign) == "" {
-		return errors.New("sign is empty")
-	}
-	if o.Cmd == nil {
-		return errors.New("cmd is empty")
-	}
-	if o.SendTime > 0 && o.ValidityPeriod > 0 {
-		if time.Now().UnixMilli() > o.SendTime+o.ValidityPeriod {
-			return fmt.Errorf("command timed out, now:%d, deadline:%d", time.Now().UnixMilli(), o.SendTime+o.ValidityPeriod)
-		}
-	}
-	return nil
-}
-
+// OperateCmd 实际参数
 type OperateCmd struct {
 	Timeout  int64             `json:"timeout"`  //毫秒
 	CmdType  string            `json:"cmdType"`  //命令类型,参照global.go中的【命令类型】
@@ -49,15 +17,22 @@ type OperateCmd struct {
 	Value    map[string]string `json:"value"`
 }
 
-const (
-	startAddrFlag = "startAddr"
-	lengthFlag    = "length"
-	valueFlag     = "value"
-)
-
-func (op *OperateCmd) IsModbusCmd() bool {
-	var keyWord = []string{global.CopyRead, global.SetCmd}
-	return slices.Contains(keyWord, op.CmdType)
+func (c *OperateCmd) Check() error {
+	if c.Timeout < 0 {
+		c.Timeout = 0
+	}
+	c.CmdType = strings.TrimSpace(c.CmdType)
+	if c.CmdType != global.CopyRead && c.CmdType != global.SetCmd && c.CmdType != global.Passthrough {
+		return errors.New("cmd type error")
+	}
+	c.FuncCode = strings.TrimSpace(c.FuncCode)
+	if c.FuncCode == "" {
+		return errors.New("funcCode error")
+	}
+	if len(c.Value) == 0 {
+		return errors.New("value is empty")
+	}
+	return nil
 }
 
 func (op *OperateCmd) modbusItem(key string) (value uint16, err error) {

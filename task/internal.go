@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"sentinels/model"
+	"sentinels/snap"
 )
 
 // 设备成功建立连接
@@ -23,6 +24,6 @@ func devSwap(dev *model.Device, data map[string]interface{}, ts int64) {
 }
 
 // 采集数据报错
-func collectPointsFail(dev *model.Device, point model.PointSnap, err error) {
+func collectPointsFail(dev *model.Device, point snap.PointSnap, err error) {
 	fmt.Println("collectPointsFail:", dev, point, err)
 }

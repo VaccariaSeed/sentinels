@@ -5,8 +5,9 @@ import (
 	"encoding/binary"
 	"encoding/hex"
 	"errors"
+	"sentinels/command"
 	"sentinels/global"
-	"sentinels/model"
+	"sentinels/snap"
 	"slices"
 	"strconv"
 	"strings"
@@ -19,9 +20,15 @@ var NotFoundThisFuncCode = errors.New("modbus tcp func code not found")
 var _ ProtoConvener = (*ModbusTCP)(nil)
 
 func init() {
-	ProtoBuilder[global.ModbusTCP] = func(id string) ProtoConvener {
-		slaveId, _ := strconv.Atoi(id)
-		return &ModbusTCP{slaveId: byte(slaveId), protocolLogo: []byte{0x00, 0x00}, proTool: &proTool{}}
+	ProtoBuilder[global.ModbusTCP] = func(id string) (ProtoConvener, error) {
+		slaveId, err := strconv.Atoi(id)
+		if err != nil {
+			return nil, err
+		}
+		if slaveId < 1 || slaveId > 247 {
+			return nil, errors.New("invalid id " + id)
+		}
+		return &ModbusTCP{slaveId: byte(slaveId), protocolLogo: []byte{0x00, 0x00}, proTool: &proTool{}}, nil
 	}
 }
 
@@ -65,57 +72,51 @@ func (m *ModbusTCP) Encode() ([]byte, error) {
 	return append(result, data...), nil
 }
 
-func (m *ModbusTCP) Decode(reader *bufio.Reader) (string, []byte, int, error) {
+func (m *ModbusTCP) Decode(reader *bufio.Reader) (string, []byte, error) {
 	peeked, err := reader.Peek(8)
 	if err != nil {
-		return "", nil, 0, err
+		return "", nil, err
 	}
 	//获取Modbus TCP协议协议
 	if peeked[2] != 0 && peeked[3] != 0 {
 		_, _ = reader.ReadByte()
-		return "", nil, 0, ModbusTCPProtocolFlagError
+		return "", nil, ModbusTCPProtocolFlagError
 	}
 	//获取单元标识符
 	ui := peeked[6]
 	if ui != m.slaveId {
 		_, _ = reader.ReadByte()
-		return "", nil, 0, errors.New("uint flag error")
+		return "", nil, errors.New("uint flag error")
 	}
 	//获取功能码
 	fc := peeked[7]
 	if !slices.Contains(funcCodes, fc) {
 		_, _ = reader.ReadByte()
-		return "", nil, 0, errors.New("modbus tcp function code error")
+		return "", nil, errors.New("modbus tcp function code error")
 	}
 	//获取所有的长度
 	frameSize := 8 - 2 + binary.BigEndian.Uint16([]byte{peeked[4], peeked[5]})
 	var frame = make([]byte, frameSize)
 	err = binary.Read(reader, binary.LittleEndian, &frame)
 	if err != nil {
-		return "", nil, 0, err
+		return "", nil, err
 	}
 	m.tiArr = frame[0:2]
 	m.funcCode = fc
 	switch m.funcCode {
 	case mtReadCoils, mtReadDiscreteInput:
 		resp, codecErr := m.decodeReadCoilsAndReadDiscreteInput(frame[9:])
-		return hex.EncodeToString(frame), resp, 1, codecErr
+		return hex.EncodeToString(frame), resp, codecErr
 	case mtReadHoldingRegister, mtReadInputRegister:
-		return hex.EncodeToString(frame), frame[9:], 2, nil
+		return hex.EncodeToString(frame), frame[9:], nil
 	case mtPreSetSingleCoil, mtWriteASingleHoldRegister, mtForceMultipleCoils, mtWriteMultipleHoldRegisters:
-		return hex.EncodeToString(frame), frame[8:], 1, nil
+		return hex.EncodeToString(frame), frame[8:], nil
 	default:
-		return hex.EncodeToString(frame), nil, 0, NotFoundThisFuncCode
+		return hex.EncodeToString(frame), nil, NotFoundThisFuncCode
 	}
 }
 
-func (m *ModbusTCP) Opt(ti []byte, cmd *model.OperateCmd) (string, []byte, error) {
-	if !cmd.IsModbusCmd() {
-		return "", nil, errors.New("modbus tcp command error")
-	}
-	if strings.TrimSpace(cmd.FuncCode) == "" {
-		return "", nil, NotFoundThisFuncCode
-	}
+func (m *ModbusTCP) Opt(cmd *command.OperateCmd) (string, []byte, error) {
 	fc, err := strconv.ParseUint(cmd.FuncCode, 0, 8)
 	if err != nil {
 		return "", nil, err
@@ -130,7 +131,7 @@ func (m *ModbusTCP) Opt(ti []byte, cmd *model.OperateCmd) (string, []byte, error
 		if cre != nil {
 			return "", nil, cre
 		}
-		return m.buildFrame(addrLength, []byte{byte(startAddr >> 8), byte(startAddr)}, fcByte, ti, nil)
+		return m.buildFrame(addrLength, []byte{byte(startAddr >> 8), byte(startAddr)}, fcByte, m.tiArr, nil)
 	} else {
 		address, mse := cmd.ModbusStartAddress()
 		if mse != nil {
@@ -142,19 +143,19 @@ func (m *ModbusTCP) Opt(ti []byte, cmd *model.OperateCmd) (string, []byte, error
 			if msv != nil {
 				return "", nil, msv
 			}
-			return m.buildFrame(value, []byte{byte(address >> 8), byte(address)}, fcByte, ti, nil)
+			return m.buildFrame(value, []byte{byte(address >> 8), byte(address)}, fcByte, m.tiArr, nil)
 		} else if fcByte == mtForceMultipleCoils {
 			size, value, msv := cmd.ModbusValueToBytes()
 			if msv != nil {
 				return "", nil, msv
 			}
-			return m.buildFrame(size, []byte{byte(address >> 8), byte(address)}, fcByte, ti, append([]byte{byte(len(value))}, value...))
+			return m.buildFrame(size, []byte{byte(address >> 8), byte(address)}, fcByte, m.tiArr, append([]byte{byte(len(value))}, value...))
 		} else if fcByte == mtWriteMultipleHoldRegisters {
 			values, mve := cmd.ModbusMultipleValue()
 			if mve != nil {
 				return "", nil, mve
 			}
-			return m.buildFrame(uint16(len(values)/2), []byte{byte(address >> 8), byte(address)}, fcByte, ti, append([]byte{byte(len(values))}, values...))
+			return m.buildFrame(uint16(len(values)/2), []byte{byte(address >> 8), byte(address)}, fcByte, m.tiArr, append([]byte{byte(len(values))}, values...))
 		} else {
 			return "", nil, NotFoundThisFuncCode
 		}
@@ -162,7 +163,7 @@ func (m *ModbusTCP) Opt(ti []byte, cmd *model.OperateCmd) (string, []byte, error
 
 }
 
-func (m *ModbusTCP) NextTi() []byte {
+func (m *ModbusTCP) nextTi() []byte {
 	m.lock.Lock()
 	defer m.lock.Unlock()
 	m.ti++
@@ -174,8 +175,8 @@ func (m *ModbusTCP) NextTi() []byte {
 	return []byte{byte(m.ti >> 8), byte(m.ti)}
 }
 
-func (m *ModbusTCP) BuildBySnap(snap model.PointSnap) (string, []byte, error) {
-	return m.buildFrame(uint16(snap.Length()), snap.Address(), snap.FunctionCode()[0], m.NextTi(), nil)
+func (m *ModbusTCP) BuildBySnap(snap snap.PointSnap) (string, []byte, error) {
+	return m.buildFrame(uint16(snap.Length()), snap.Address(), snap.FunctionCode()[0], m.nextTi(), nil)
 }
 
 func (m *ModbusTCP) buildFrame(length uint16, address []byte, funcCode byte, ti []byte, data []byte) (string, []byte, error) {
@@ -212,7 +213,7 @@ func (m *ModbusTCP) Key() string {
 }
 
 func (m *ModbusTCP) Copy() ProtoConvener {
-	return &ModbusTCP{slaveId: m.slaveId, protocolLogo: []byte{0x00, 0x00}, proTool: &proTool{}}
+	return &ModbusTCP{slaveId: m.slaveId, protocolLogo: []byte{0x00, 0x00}, proTool: &proTool{}, tiArr: m.nextTi()}
 }
 
 func (m *ModbusTCP) decodeReadCoilsAndReadDiscreteInput(bytes []byte) ([]byte, error) {

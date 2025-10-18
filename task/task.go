@@ -5,9 +5,11 @@ import (
 	"errors"
 	"io"
 	"sentinels/catch"
+	"sentinels/command"
 	"sentinels/global"
 	"sentinels/model"
 	"sentinels/protocol"
+	"sentinels/snap"
 	"sync"
 	"time"
 
@@ -15,26 +17,36 @@ import (
 )
 
 func NewGaTaskProcessor(device *model.Device) (*GaTaskProcessor, error) {
+	//创建空调度器
 	gtp := &GaTaskProcessor{}
+	//获取调度器创建连接器的方法
 	ctFunc, ok := catch.ConnectorBuilder[device.InterfaceType]
 	if !ok {
 		return nil, errors.New("connector not found for " + device.InterfaceType)
 	}
+	//创建连接器
 	gtp.Connector = ctFunc(device)
+	//获取编解码器
 	ptFunc, ok := protocol.ProtoBuilder[device.ProtocolType]
 	if !ok {
 		return nil, errors.New("protocol not found for " + device.ProtocolType)
 	}
-	gtp.Codec = ptFunc(device.DeviceAddress)
-	gtp.Connector.AddProtocolCodec(ptFunc(device.DeviceAddress))
-	//构建点位约束器
+
 	var err error
+	gtp.Codec, err = ptFunc(device.DeviceAddress)
+	if err != nil {
+		return nil, err
+	}
+	gtp.Connector.AddProtocolCodec(gtp.Codec.Copy())
+	//构建点位约束器
 	gtp.pb, err = buildBinder(device)
 	if err != nil {
 		return nil, err
 	}
+	//创建日志组件
 	gtp.logger = global.CreateLog(device.Identifier())
 	gtp.Connector.AddLogger(gtp.logger)
+	//添加各种回调
 	gtp.AddSuccessLinkedCallBack(devConnected)
 	gtp.AddFailLinkedCallBack(devDisConnected)
 	gtp.AddSwapCallback(devSwap)
@@ -98,20 +110,28 @@ func (g *GaTaskProcessor) run() error {
 	}
 }
 
-func (g *GaTaskProcessor) collect(point model.PointSnap) error {
+func (g *GaTaskProcessor) collect(point snap.PointSnap) error {
+	//剔除无用的点位
+	if point == nil {
+		return nil
+	}
+	//判断连接是否正常
 	if !g.Connector.IsLinked() {
 		g.logger.Error("collector not linked, device:", g.Connector.ObtainDevice().Identifier())
 		return io.EOF
 	}
+	//根据点位组装报文
 	key, frame, err := g.Codec.BuildBySnap(point)
 	if err != nil {
 		g.logger.Errorf("build by snap:\n%s \n err:%s", point.String(), err.Error())
 	}
+	//发送报文
 	err = g.Connector.Collect(key, frame, point)
 	if err != nil {
 		g.logger.Errorf("read by snap:\n%s \n err:%s", point.String(), err.Error())
 	}
-	time.Sleep(time.Millisecond * 200 * 5 * 2) //暂停两百毫秒
+	//暂停一段时间
+	time.Sleep(time.Millisecond * 200 * 5 * 2) //暂停
 	return nil
 }
 
@@ -135,9 +155,11 @@ func (g *GaTaskProcessor) AddCollectPointFailCallback(cps catch.CollectPointsFai
 	g.Connector.AddCollectPointFailCallback(cps)
 }
 
-func (g *GaTaskProcessor) operate(opt *model.OperateCmd) ([]byte, error) {
+func (g *GaTaskProcessor) operate(opt *command.OperateCmd) ([]byte, error) {
+	if !g.Connector.IsLinked() {
+		return nil, errors.New("connector not linked, device:" + g.Connector.ObtainDevice().Identifier())
+	}
 	g.lock.Lock()
 	defer g.lock.Unlock()
-	ti := g.Codec.NextTi()
-	return g.Connector.Operate(ti, opt)
+	return g.Connector.Operate(opt)
 }
